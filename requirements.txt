@@ -4,5 +4,8 @@ streamlit==1.31.0
 # For future API integration
 requests==2.31.0
 
-# Environment variables (optional, for future use)
+# Environment variables
 python-dotenv==1.0.0
+
+# Production dependencies
+watchdog==3.0.0
