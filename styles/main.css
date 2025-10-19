@@ -1,0 +1,315 @@
+/* AgustoGPT Custom Styles */
+/* Agusto & Co. Brand Colors */
+:root {
+    --agusto-navy: #001B44;
+    --agusto-gray: #9CA3AF;
+    --agusto-blue: #1E40AF;
+    --agusto-green: #059669;
+    --agusto-yellow: #FCD34D;
+    --agusto-red: #DC2626;
+}
+
+/* Import PT Sans Font */
+@import url('https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* Global Styles */
+body {
+    font-family: 'PT Sans', sans-serif !important;
+}
+
+/* Hide Streamlit Branding */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Sidebar Styling */
+[data-testid="stSidebar"] {
+    padding-top: 1rem;
+}
+
+.sidebar-header {
+    padding: 0;
+    margin-bottom: 0.75rem;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    width: 32px;
+    height: 32px;
+}
+
+.logo-square {
+    border-radius: 2px;
+}
+
+.logo-square.navy {
+    background-color: var(--agusto-navy);
+}
+
+.logo-square.gray {
+    background-color: var(--agusto-gray);
+}
+
+.logo-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--agusto-navy);
+}
+
+/* Main Header */
+.main-header {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--agusto-navy);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--agusto-navy);
+}
+
+/* Welcome Screen */
+.welcome-container {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.welcome-container h2 {
+    color: var(--agusto-navy);
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-container p {
+    color: #6B7280;
+    font-size: 1.1rem;
+}
+
+/* Message Styling */
+.user-message {
+    background: linear-gradient(to right, var(--agusto-blue) 4px, #EFF6FF 4px);
+    padding: 1rem 1rem 1rem 1.5rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    margin-bottom: 1.5rem;
+}
+
+.assistant-message {
+    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px);
+    padding: 1.5rem 1.5rem 1.5rem 2rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    margin-bottom: 1.5rem;
+}
+
+.message-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.user-message .message-label {
+    color: #1E40AF;
+}
+
+.assistant-message .message-label {
+    color: #059669;
+}
+
+.message-content {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #1F2937;
+    white-space: pre-wrap;
+}
+
+/* Sources Styling */
+.sources-container {
+    background: white;
+    /* border: 1px solid #E5E7EB; */
+    border-radius: 0.5rem;
+    /* padding: 1.5rem; */
+    margin-top: 1rem;
+}
+
+.sources-container h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1F2937;
+    margin-bottom: 1rem;
+}
+
+.source-item {
+    border-left: 2px solid #60A5FA;
+    padding-left: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.2s;
+}
+
+.source-item:hover {
+    border-left-color: var(--agusto-blue);
+}
+
+.source-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--agusto-blue);
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+}
+
+.source-title:hover {
+    text-decoration: underline;
+}
+
+.source-excerpt {
+    font-size: 0.8rem;
+    color: #6B7280;
+    line-height: 1.4;
+}
+
+/* Selected Reports */
+.selected-report {
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.selected-report-more {
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--agusto-blue);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* Brand Bar Footer */
+.brand-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    display: flex;
+    z-index: 1000;
+}
+
+.brand-bar-navy {
+    flex: 1;
+    background-color: var(--agusto-navy);
+}
+
+.brand-bar-gray {
+    flex: 1;
+    background-color: var(--agusto-gray);
+}
+
+/* Streamlit Button Customization */
+.stButton > button {
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.stButton > button[kind="primary"] {
+    background-color: var(--agusto-navy);
+    border: none;
+}
+
+.stButton > button[kind="primary"]:hover {
+    background-color: #002a66;
+}
+
+/* Sidebar Buttons */
+[data-testid="stSidebar"] .stButton > button {
+    width: 100%;
+    text-align: left;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background-color: #F3F4F6;
+}
+
+/* Input Field Styling */
+.stTextInput > div > div > input {
+    border-radius: 0.5rem;
+    border: 1px solid #D1D5DB;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+}
+
+.stTextInput > div > div > input:focus {
+    border-color: var(--agusto-blue);
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+.st-emotion-cache-16txtl3 {
+    padding: 2rem 1.5rem;
+}
+
+/* Select Box Styling */
+.stSelectbox > div > div {
+    border-radius: 0.5rem;
+}
+
+/* Info/Success Boxes */
+.stAlert {
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #F3F4F6;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--agusto-gray);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6B7280;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .welcome-container {
+        padding: 2rem 1rem;
+    }
+    
+    .welcome-container h2 {
+        font-size: 1.5rem;
+    }
+    
+    .main-header {
+        font-size: 1.25rem;
+    }
+}

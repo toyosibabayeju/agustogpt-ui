@@ -1,0 +1,8 @@
+# Core Framework
+streamlit==1.31.0
+
+# For future API integration
+requests==2.31.0
+
+# Environment variables (optional, for future use)
+python-dotenv==1.0.0
