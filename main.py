@@ -7,6 +7,12 @@ import streamlit as st
 from datetime import datetime
 import time
 import os
+import requests
+from typing import Optional, Dict, Any
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Page Configuration
 st.set_page_config(
@@ -44,8 +50,7 @@ if 'chat_history' not in st.session_state:
 if 'filters' not in st.session_state:
     st.session_state.filters = {
         'industry_sector': '',
-        'report_year': '',
-        'report_type': ''
+        'report_year': ''
     }
 
 # Dummy Data
@@ -82,20 +87,96 @@ DUMMY_SOURCES = [
     }
 ]
 
-# Filter Options
-INDUSTRY_SECTORS = ['', 'Electricity', 'Banking', 'Telecommunications', 'Oil & Gas', 'Insurance']
-REPORT_YEARS = ['', '2025', '2024', '2023', '2022']
-REPORT_TYPES = ['', 'Industry Report', 'Sector Outlook', 'Market Analysis', 'Risk Assessment']
+# Filter Options - Aligned with Azure Search Index
+INDUSTRY_SECTORS = ['', 'Oil & Gas Upstream', 'Oil & Gas Downstream', 'Insurance', 'Banking', 'Electricity', 'Telecommunications']
+REPORT_YEARS = ['', '2025', '2024', '2023', '2022', '2021']
+
+# API Configuration
+AGENT_API_URL = os.getenv('AGENT_API_URL', 'http://localhost:8000')
 
 # Functions
+def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    """
+    Call the agent API to get response
+    Supports both auto and tailored search modes
+    """
+    try:
+        # Prepare payload
+        payload = {
+            "user_query": query
+        }
+
+        # Add filters for tailored search
+        if search_mode == 'tailored' and filters:
+            # Add year filter if specified
+            if filters.get('report_year'):
+                payload['year_to_search'] = int(filters['report_year'])
+            else:
+                payload['year_to_search'] = datetime.now().year
+
+            # Add industry filter if specified
+            if filters.get('industry_sector'):
+                payload['industry_to_search'] = filters['industry_sector']
+            else:
+                payload['industry_to_search'] = ""
+        else:
+            # Auto search - use current year and empty industry
+            payload['year_to_search'] = datetime.now().year
+            payload['industry_to_search'] = ""
+
+        # Make API request
+        response = requests.post(
+            f"{AGENT_API_URL}/query",
+            json=payload,
+            timeout=60
+        )
+        response.raise_for_status()
+
+        # Parse response
+        data = response.json()
+
+        # Format sources for UI
+        sources = []
+        if 'document_information' in data and data['document_information']:
+            for doc in data['document_information']:
+                # Create readable title
+                doc_name = doc.get('document_name', 'Unknown Document')
+                page_num = doc.get('page_number', 0)
+
+                sources.append({
+                    "title": f"{doc_name} - Page {page_num}",
+                    "excerpt": f"From {doc.get('industry', 'N/A')} ({doc.get('year', 'N/A')}), Chunk {doc.get('chunk_index', 0)}",
+                    "report": doc_name,
+                    "page": page_num
+                })
+
+        return {
+            "response": data.get('response', 'No response generated'),
+            "sources": sources,
+            "timestamp": data.get('current_date', datetime.now().isoformat())
+        }
+
+    except requests.exceptions.RequestException as e:
+        # Handle API errors gracefully
+        return {
+            "response": f"⚠️ Error connecting to agent API: {str(e)}\n\nPlease ensure the agent API is running at {AGENT_API_URL}",
+            "sources": [],
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "response": f"⚠️ Unexpected error: {str(e)}",
+            "sources": [],
+            "timestamp": datetime.now().isoformat()
+        }
+
 def get_dummy_response(query, search_mode):
     """
-    Simulate API call to backend
-    In production, this will call your Azure Function App
+    Simulate API call to backend (DEPRECATED - for fallback only)
     """
     # Simulate processing time
     time.sleep(2)
-    
+
     return {
         "response": DUMMY_RESPONSE,
         "sources": DUMMY_SOURCES,
@@ -179,24 +260,25 @@ with st.sidebar:
             "Industry Sector:",
             INDUSTRY_SECTORS
         )
-        
+
         st.session_state.filters['report_year'] = st.selectbox(
             "Report Year:",
             REPORT_YEARS
         )
-        
-        st.session_state.filters['report_type'] = st.selectbox(
-            "Report Type:",
-            REPORT_TYPES
-        )
-        
-        # Current Selection
-        st.markdown("**Current Selection**")
-        st.markdown("""
-        <div class="selected-report">Nigerian Electricity (2025)</div>
-        <div class="selected-report">Banking Sector (2025)</div>
-        <div class="selected-report-more">+ 12 more reports</div>
-        """, unsafe_allow_html=True)
+
+        # Show selected filters
+        st.markdown("**Active Filters**")
+        active_filters = []
+        if st.session_state.filters.get('industry_sector'):
+            active_filters.append(st.session_state.filters['industry_sector'])
+        if st.session_state.filters.get('report_year'):
+            active_filters.append(st.session_state.filters['report_year'])
+
+        if active_filters:
+            for filter_val in active_filters:
+                st.markdown(f'<div class="selected-report">{filter_val}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="selected-report-more">No filters selected</div>', unsafe_allow_html=True)
         
         st.markdown("---")
     
@@ -256,8 +338,12 @@ if submit and query:
     
     # Show loading
     with st.spinner("AgustoGPT is thinking..."):
-        # Get response (dummy data for now)
-        response = get_dummy_response(query, st.session_state.search_mode)
+        # Get response from agent API
+        response = call_agent_api(
+            query,
+            st.session_state.search_mode,
+            st.session_state.filters
+        )
     
     # Add assistant message
     st.session_state.messages.append({
