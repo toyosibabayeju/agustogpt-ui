@@ -17,7 +17,7 @@ load_dotenv()
 # Page Configuration
 st.set_page_config(
     page_title="AgustoGPT - AI Research Assistant",
-    page_icon="🔍",
+    page_icon=":material/search:",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -159,13 +159,13 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
     except requests.exceptions.RequestException as e:
         # Handle API errors gracefully
         return {
-            "response": f"⚠️ Error connecting to agent API: {str(e)}\n\nPlease ensure the agent API is running at {AGENT_API_URL}",
+            "response": f"Error connecting to agent API: {str(e)}\n\nPlease ensure the agent API is running at {AGENT_API_URL}",
             "sources": [],
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
         return {
-            "response": f"⚠️ Unexpected error: {str(e)}",
+            "response": f"Unexpected error: {str(e)}",
             "sources": [],
             "timestamp": datetime.now().isoformat()
         }
@@ -236,13 +236,15 @@ with st.sidebar:
     
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔍 Auto", use_container_width=True, 
+        if st.button("Auto", icon=":material/search:", use_container_width=True,
                     type="primary" if st.session_state.search_mode == 'auto' else "secondary"):
             st.session_state.search_mode = 'auto'
+            st.rerun()
     with col2:
-        if st.button("🎯 Tailored", use_container_width=True,
+        if st.button("Tailored", icon=":material/my_location:", use_container_width=True,
                     type="primary" if st.session_state.search_mode == 'tailored' else "secondary"):
             st.session_state.search_mode = 'tailored'
+            st.rerun()
     
     # Search Mode Description
     if st.session_state.search_mode == 'auto':
@@ -300,7 +302,6 @@ with chat_container:
         # Welcome Message
         st.markdown("""
         <div class="welcome-container">
-            <div class="welcome-icon">🔍</div>
             <h2>Welcome to AgustoGPT</h2>
             <p>Ask questions about your reports and get intelligent insights.</p>
         </div>
