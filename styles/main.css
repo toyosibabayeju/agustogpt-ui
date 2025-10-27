@@ -115,6 +115,7 @@ header {visibility: hidden;}
     padding: 1rem 1rem 1rem 1.5rem;
     border-radius: 0 0.5rem 0.5rem 0;
     margin-bottom: 1.5rem;
+    margin-top: 1.5rem;
 }
 
 .assistant-message {
@@ -149,49 +150,69 @@ header {visibility: hidden;}
 
 /* Sources Styling */
 .sources-container {
-    background: white;
-    /* border: 1px solid #E5E7EB; */
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
     border-radius: 0.5rem;
-    /* padding: 1.5rem; */
-    margin-top: 1rem;
+    padding: 1.25rem;
+    margin-top: 1.25rem;
 }
 
-.sources-container h4 {
-    font-size: 0.9rem;
+.sources-header {
+    font-size: 0.875rem;
     font-weight: 600;
-    color: #1F2937;
-    margin-bottom: 1rem;
+    color: #374151;
+    margin-top: .75rem;
+    margin-bottom: 0rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
 }
 
 .source-item {
-    border-left: 2px solid #60A5FA;
-    padding-left: 1rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.75rem;
-    transition: border-color 0.2s;
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-left: 3px solid var(--agusto-blue);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.25rem;
+    margin-bottom: -.5rem !important;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .source-item:hover {
-    border-left-color: var(--agusto-blue);
+    border-left-color: var(--agusto-navy);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transform: translateX(2px);
 }
 
-.source-title {
+.source-item:last-child {
+    margin-bottom: -1.5rem !important;
+}
+
+.source-report-name {
     font-size: 0.9rem;
     font-weight: 600;
+    color: var(--agusto-navy);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.source-icon {
+    font-size: 1.25rem !important;
     color: var(--agusto-blue);
-    margin-bottom: 0.25rem;
-    cursor: pointer;
 }
 
-.source-title:hover {
-    text-decoration: underline;
-}
-
-.source-excerpt {
+.source-pages {
     font-size: 0.8rem;
     color: #6B7280;
-    line-height: 1.4;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 0.25rem 0.75rem;
+    background: #F3F4F6;
+    border-radius: 0.25rem;
 }
 
 /* Selected Reports */

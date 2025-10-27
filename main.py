@@ -199,18 +199,42 @@ def display_message(message):
             <div class="message-content">{message['content']}</div>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Display sources
+
+        # Display sources - grouped by report
         if 'sources' in message and message['sources']:
-            st.markdown('<div class="sources-container"><h4>Sources from your reports:</h4>', unsafe_allow_html=True)
+            # Group sources by report name
+            grouped_sources = {}
             for source in message['sources']:
+                report_name = source.get('report', 'Unknown Report')
+                if report_name not in grouped_sources:
+                    grouped_sources[report_name] = {
+                        'pages': [],
+                        'excerpt': source.get('excerpt', '')
+                    }
+                page_num = source.get('page', 0)
+                if page_num not in grouped_sources[report_name]['pages']:
+                    grouped_sources[report_name]['pages'].append(page_num)
+
+            # Display grouped sources
+            st.markdown('<div class="sources-header">Sources from your reports:</div>', unsafe_allow_html=True)
+            for report_name, data in grouped_sources.items():
+                pages = sorted(data['pages'])
+                pages_text = ', '.join([f"Page {p}" for p in pages])
+
+                st.markdown("""
+                    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+                        rel="stylesheet" />
+                """, unsafe_allow_html=True)
                 st.markdown(f"""
                 <div class="source-item">
-                    <div class="source-title">{source['title']}</div>
-                    <div class="source-excerpt">{source['excerpt']}</div>
+                    <div class="source-report-name">
+                        <span class="material-symbols-outlined source-icon">description</span>
+                        {report_name}
+                    </div>
+                    <div class="source-pages">{pages_text}</div>
                 </div>
                 """, unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+
 
 # ===== SIDEBAR =====
 with st.sidebar:
