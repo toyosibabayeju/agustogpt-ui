@@ -193,12 +193,15 @@ def display_message(message):
         </div>
         """, unsafe_allow_html=True)
     else:
-        st.markdown(f"""
-        <div class="assistant-message">
-            <div class="message-label">AgustoGPT:</div>
-            <div class="message-content">{message['content']}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Display assistant message with markdown support
+        # Use a container and add custom class via HTML wrapper
+        st.markdown('<div class="assistant-msg-start"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="message-label assistant-label">AgustoGPT:</div>', unsafe_allow_html=True)
+
+        # Render markdown content with proper formatting
+        st.markdown(message['content'])
+
+        st.markdown('<div class="assistant-msg-end"></div>', unsafe_allow_html=True)
 
         # Display sources - grouped by report
         if 'sources' in message and message['sources']:
@@ -388,25 +391,3 @@ st.markdown("""
     <div class="brand-bar-gray"></div>
 </div>
 """, unsafe_allow_html=True)
-
-# Future Azure Function App Integration Comment
-# """
-# FUTURE INTEGRATION:
-# Replace get_dummy_response() function with actual API call:
-
-# import requests
-# import os
-
-# API_ENDPOINT = os.getenv('AZURE_FUNCTION_URL', 'https://your-app.azurewebsites.net/api')
-
-# def call_azure_function(query, search_mode, filters=None):
-#     response = requests.post(
-#         f"{API_ENDPOINT}/chat/query",
-#         json={
-#             "query": query,
-#             "search_mode": search_mode,
-#             "filters": filters
-#         }
-#     )
-#     return response.json()
-# """

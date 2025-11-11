@@ -135,6 +135,35 @@ header {visibility: hidden;}
     margin-bottom: 1.5rem;
 }
 
+.assistant-message-container {
+    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px);
+    padding: 1.5rem 1.5rem 1.5rem 2rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    margin-bottom: 1.5rem;
+}
+
+/* Wrapper for assistant messages with markdown */
+.assistant-message-wrapper {
+    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px);
+    padding: 1.5rem 1.5rem 1.5rem 2rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    margin-bottom: 1.5rem;
+}
+
+/* Style Streamlit containers that have assistant-label */
+.assistant-label ~ div,
+.assistant-label ~ .element-container {
+    background: transparent !important;
+}
+
+/* Target the parent container of assistant messages */
+div:has(> .assistant-label) {
+    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px) !important;
+    padding: 1.5rem 1.5rem 1.5rem 2rem !important;
+    border-radius: 0 0.5rem 0.5rem 0 !important;
+    margin-bottom: 1.5rem !important;
+}
+
 .message-label {
     font-size: 0.75rem;
     font-weight: 700;
@@ -149,6 +178,44 @@ header {visibility: hidden;}
 
 .assistant-message .message-label {
     color: #059669;
+}
+
+.assistant-label {
+    color: #059669 !important;
+}
+
+/* Style markdown content in assistant messages */
+div:has(> .assistant-label) p,
+div:has(> .assistant-label) ul,
+div:has(> .assistant-label) ol,
+div:has(> .assistant-label) h1,
+div:has(> .assistant-label) h2,
+div:has(> .assistant-label) h3,
+div:has(> .assistant-label) h4,
+div:has(> .assistant-label) code,
+div:has(> .assistant-label) pre,
+div:has(> .assistant-label) li {
+    color: #1F2937 !important;
+    line-height: 1.6;
+}
+
+div:has(> .assistant-label) strong {
+    font-weight: 700 !important;
+    color: var(--agusto-navy) !important;
+}
+
+div:has(> .assistant-label) code {
+    background: #F3F4F6 !important;
+    padding: 0.2rem 0.4rem !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.9em !important;
+}
+
+div:has(> .assistant-label) pre {
+    background: #F3F4F6 !important;
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    overflow-x: auto !important;
 }
 
 .message-content {
