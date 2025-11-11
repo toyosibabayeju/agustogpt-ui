@@ -185,26 +185,13 @@ def get_dummy_response(query, search_mode):
 
 def display_message(message):
     """Display a single message (user or assistant)"""
-    if message['type'] == 'user':
-        st.markdown(f"""
-        <div class="user-message">
-            <div class="message-label">You asked:</div>
-            <div class="message-content">{message['content']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        # Display assistant message with markdown support
-        # Use a container and add custom class via HTML wrapper
-        st.markdown('<div class="assistant-msg-start"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="message-label assistant-label">AgustoGPT:</div>', unsafe_allow_html=True)
+    role = message.get('role', message.get('type', 'user'))  # Support both 'role' and 'type' keys
 
-        # Render markdown content with proper formatting
+    with st.chat_message(role):
         st.markdown(message['content'])
 
-        st.markdown('<div class="assistant-msg-end"></div>', unsafe_allow_html=True)
-
-        # Display sources - grouped by report
-        if 'sources' in message and message['sources']:
+        # Display sources if available (for assistant messages)
+        if role == 'assistant' and 'sources' in message and message['sources']:
             # Group sources by report name
             grouped_sources = {}
             for source in message['sources']:
@@ -338,49 +325,75 @@ with chat_container:
         for message in st.session_state.messages:
             display_message(message)
 
-# Input Area
-st.markdown("---")
-
-# Query Input
-col1, col2 = st.columns([5, 1])
-
-with col1:
-    query = st.text_input(
-        "Ask a question",
-        placeholder="Ask a question about your reports...",
-        label_visibility="collapsed",
-        key="query_input"
-    )
-
-with col2:
-    submit = st.button("Ask", use_container_width=True, type="primary")
-
-# Handle Submit
-if submit and query:
+# Chat Input
+if prompt := st.chat_input("Ask a question about your reports..."):
     # Add user message
     st.session_state.messages.append({
-        "type": "user",
-        "content": query,
+        "role": "user",
+        "content": prompt,
         "timestamp": datetime.now().isoformat()
     })
-    
-    # Show loading
-    with st.spinner("AgustoGPT is thinking..."):
-        # Get response from agent API
-        response = call_agent_api(
-            query,
-            st.session_state.search_mode,
-            st.session_state.filters
-        )
-    
-    # Add assistant message
+
+    # Display user message
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    # Show loading and get response
+    with st.chat_message("assistant"):
+        with st.spinner("AgustoGPT is thinking..."):
+            # Get response from agent API
+            response = call_agent_api(
+                prompt,
+                st.session_state.search_mode,
+                st.session_state.filters
+            )
+
+        # Display assistant response
+        st.markdown(response['response'])
+
+        # Display sources if available
+        if response['sources']:
+            # Group sources by report name
+            grouped_sources = {}
+            for source in response['sources']:
+                report_name = source.get('report', 'Unknown Report')
+                if report_name not in grouped_sources:
+                    grouped_sources[report_name] = {
+                        'pages': [],
+                        'excerpt': source.get('excerpt', '')
+                    }
+                page_num = source.get('page', 0)
+                if page_num not in grouped_sources[report_name]['pages']:
+                    grouped_sources[report_name]['pages'].append(page_num)
+
+            # Display grouped sources
+            st.markdown('<div class="sources-header">Sources from your reports:</div>', unsafe_allow_html=True)
+            for report_name, data in grouped_sources.items():
+                pages = sorted(data['pages'])
+                pages_text = ', '.join([f"Page {p}" for p in pages])
+
+                st.markdown("""
+                    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+                        rel="stylesheet" />
+                """, unsafe_allow_html=True)
+                st.markdown(f"""
+                <div class="source-item">
+                    <div class="source-report-name">
+                        <span class="material-symbols-outlined source-icon">description</span>
+                        {report_name}
+                    </div>
+                    <div class="source-pages">{pages_text}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+    # Add assistant message to chat history
     st.session_state.messages.append({
-        "type": "assistant",
+        "role": "assistant",
         "content": response['response'],
         "sources": response['sources'],
         "timestamp": response['timestamp']
     })
-    
+
     # Rerun to display new messages
     st.rerun()
 
