@@ -130,6 +130,28 @@ header {visibility: hidden;}
 
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
     background: transparent !important;
+    padding-top: 2rem;
+}
+
+/* Replace User Avatar Icon with Text */
+[data-testid="stChatMessageAvatarUser"] svg {
+    display: none !important;
+}
+
+[data-testid="stChatMessageAvatarUser"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--agusto-navy) !important;
+    background: transparent !important;
+    padding: 0.25rem 0 !important;
+}
+
+[data-testid="stChatMessageAvatarUser"]::before {
+    content: "Query" !important;
+    white-space: nowrap !important;
 }
 
 .user-message {
