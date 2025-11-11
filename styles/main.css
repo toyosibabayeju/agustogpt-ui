@@ -150,6 +150,42 @@ header {visibility: hidden;}
 
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
     background: transparent !important;
+    padding-top: 2rem;
+}
+
+/* Replace Assistant Avatar Icon with Text and Logo */
+[data-testid="stChatMessageAvatarAssistant"] svg {
+    display: none !important;
+}
+
+[data-testid="stChatMessageAvatarAssistant"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--agusto-navy) !important;
+    background: transparent !important;
+    padding: 0.25rem 0 !important;
+}
+
+/* Logo icon using background gradient */
+[data-testid="stChatMessageAvatarAssistant"]::before {
+    content: "" !important;
+    width: 20px !important;
+    height: 20px !important;
+    background:
+        linear-gradient(var(--agusto-gray), var(--agusto-gray)) 0 0 / 9px 9px no-repeat,
+        linear-gradient(var(--agusto-navy), var(--agusto-navy)) 11px 0 / 9px 9px no-repeat,
+        linear-gradient(var(--agusto-navy), var(--agusto-navy)) 0 11px / 9px 9px no-repeat,
+        linear-gradient(var(--agusto-gray), var(--agusto-gray)) 11px 11px / 9px 9px no-repeat !important;
+    flex-shrink: 0 !important;
+}
+
+[data-testid="stChatMessageAvatarAssistant"]::after {
+    content: "AgustoGPT" !important;
+    white-space: nowrap !important;
 }
 
 .assistant-message {
