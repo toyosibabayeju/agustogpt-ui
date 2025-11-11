@@ -238,23 +238,23 @@ def display_message(message):
 
 # ===== SIDEBAR =====
 with st.sidebar:
-    # Logo and Title
-    st.markdown("""
-    <div class="sidebar-header">
-        <div class="logo-container">
-            <div class="logo-icon">
-                <div class="logo-square gray"></div>
-                <div class="logo-square navy"></div>
-                <div class="logo-square navy"></div>
-                <div class="logo-square gray"></div>
-            </div>
-            <span class="logo-text">AgustoGPT</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
+    # Logo and Title (commented out)
+    # st.markdown("""
+    # <div class="sidebar-header">
+    #     <div class="logo-container">
+    #         <div class="logo-icon">
+    #             <div class="logo-square gray"></div>
+    #             <div class="logo-square navy"></div>
+    #             <div class="logo-square navy"></div>
+    #             <div class="logo-square gray"></div>
+    #         </div>
+    #         <span class="logo-text">AgustoGPT</span>
+    #     </div>
+    # </div>
+    # """, unsafe_allow_html=True)
+
+    # st.markdown("---")
+
     # Search Mode Selection
     st.subheader("Search Mode")
     
@@ -316,7 +316,7 @@ with st.sidebar:
             # In production, load the actual chat
 
 # ===== MAIN CONTENT =====
-st.markdown('<div class="main-header">AgustoGPT - AI Research Assistant</div>', unsafe_allow_html=True)
+# st.markdown('<div class="main-header">AgustoGPT - AI Research Assistant</div>', unsafe_allow_html=True)
 
 # Chat Container
 chat_container = st.container()
@@ -327,7 +327,7 @@ with chat_container:
         st.markdown("""
         <div class="welcome-container">
             <h2>Welcome to AgustoGPT</h2>
-            <p>Ask questions about your reports and get intelligent insights.</p>
+            <p>Your AI Research Assistant, Ask questions about your reports and get intelligent insights.</p>
         </div>
         """, unsafe_allow_html=True)
     else:

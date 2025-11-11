@@ -36,7 +36,7 @@ header {visibility: hidden;}
 
 /* Sidebar Styling */
 [data-testid="stSidebar"] {
-    padding-top: 1rem;
+    padding-top: 0rem;
     width: 300px !important;
     min-width: 300px !important;
     max-width: 300px !important;
