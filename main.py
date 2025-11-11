@@ -10,6 +10,8 @@ import os
 import requests
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
+from st_copy import copy_button
+import re
 
 # Load environment variables
 load_dotenv()
@@ -190,6 +192,21 @@ def display_message(message):
     with st.chat_message(role):
         st.markdown(message['content'])
 
+        # Add copy button for assistant messages
+        if role == 'assistant':
+            # Strip markdown formatting for plain text copy
+            plain_text = message['content']
+            plain_text = re.sub(r'\*\*(.+?)\*\*', r'\1', plain_text)  # Remove bold
+            plain_text = re.sub(r'\*(.+?)\*', r'\1', plain_text)  # Remove italics
+            plain_text = re.sub(r'#{1,6}\s*(.+)', r'\1', plain_text)  # Remove headers
+
+            copy_button(
+                plain_text,
+                tooltip="Copy response",
+                copied_label="Copied!",
+                icon="content_copy"
+            )
+
         # Display sources if available (for assistant messages)
         if role == 'assistant' and 'sources' in message and message['sources']:
             # Group sources by report name
@@ -340,7 +357,7 @@ if prompt := st.chat_input("Ask a question about your reports..."):
 
     # Show loading and get response
     with st.chat_message("assistant"):
-        with st.spinner("AgustoGPT is thinking..."):
+        with st.spinner("Thinking..."):
             # Get response from agent API
             response = call_agent_api(
                 prompt,
@@ -350,6 +367,19 @@ if prompt := st.chat_input("Ask a question about your reports..."):
 
         # Display assistant response
         st.markdown(response['response'])
+
+        # Add copy button
+        plain_text = response['response']
+        plain_text = re.sub(r'\*\*(.+?)\*\*', r'\1', plain_text)  # Remove bold
+        plain_text = re.sub(r'\*(.+?)\*', r'\1', plain_text)  # Remove italics
+        plain_text = re.sub(r'#{1,6}\s*(.+)', r'\1', plain_text)  # Remove headers
+
+        copy_button(
+            plain_text,
+            tooltip="Copy response",
+            copied_label="Copied!",
+            icon="content_copy"
+        )
 
         # Display sources if available
         if response['sources']:
