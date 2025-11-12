@@ -119,6 +119,59 @@ header {visibility: hidden;}
     font-size: 1.1rem;
 }
 
+/* Typewriter effect for welcome text */
+.typewriter-text {
+    border-right: 2px solid #6B7280;
+    white-space: nowrap;
+    display: inline-block;
+    animation: typing 3.5s steps(80, end), blink-caret 0.75s step-end 3;
+    animation-fill-mode: forwards;
+}
+
+@keyframes typing {
+    from { 
+        max-width: 0;
+        overflow: hidden;
+    }
+    to { 
+        max-width: 100%;
+        overflow: hidden;
+    }
+}
+
+@keyframes blink-caret {
+    from, to { 
+        border-color: transparent;
+    }
+    50% { 
+        border-color: #6B7280;
+    }
+}
+
+/* Streaming text effect for assistant responses */
+.streaming-text {
+    display: inline;
+}
+
+.streaming-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 1em;
+    background-color: #6B7280;
+    margin-left: 2px;
+    animation: cursor-blink 0.8s infinite;
+    vertical-align: text-bottom;
+}
+
+@keyframes cursor-blink {
+    0%, 49% {
+        opacity: 1;
+    }
+    50%, 100% {
+        opacity: 0;
+    }
+}
+
 /* Message Styling */
 /* Streamlit Chat Message Styling - User Messages */
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
@@ -164,7 +217,7 @@ header {visibility: hidden;}
 
 /* Streamlit Chat Message Styling - Assistant Messages */
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
-    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px) !important;
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px) !important; */
     border-radius: 0 0.5rem 0.5rem 0 !important;
     padding: 1.5rem 1.5rem 1.5rem 2rem !important;
     margin-bottom: 1rem !important;
@@ -211,14 +264,14 @@ header {visibility: hidden;}
 }
 
 .assistant-message {
-    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px);
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px); */
     padding: 1.5rem 1.5rem 1.5rem 2rem;
     border-radius: 0 0.5rem 0.5rem 0;
     margin-bottom: 1.5rem;
 }
 
 .assistant-message-container {
-    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px);
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px); */
     padding: 1.5rem 1.5rem 1.5rem 2rem;
     border-radius: 0 0.5rem 0.5rem 0;
     margin-bottom: 1.5rem;
@@ -226,7 +279,7 @@ header {visibility: hidden;}
 
 /* Wrapper for assistant messages with markdown */
 .assistant-message-wrapper {
-    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px);
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px); */
     padding: 1.5rem 1.5rem 1.5rem 2rem;
     border-radius: 0 0.5rem 0.5rem 0;
     margin-bottom: 1.5rem;
@@ -240,7 +293,7 @@ header {visibility: hidden;}
 
 /* Target the parent container of assistant messages */
 div:has(> .assistant-label) {
-    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px) !important;
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px) !important; */
     padding: 1.5rem 1.5rem 1.5rem 2rem !important;
     border-radius: 0 0.5rem 0.5rem 0 !important;
     margin-bottom: 1.5rem !important;

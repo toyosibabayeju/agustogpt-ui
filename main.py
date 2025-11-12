@@ -16,6 +16,15 @@ import re
 # Load environment variables
 load_dotenv()
 
+# Helper Functions
+def stream_text(text: str, delay: float = 0.02):
+    """
+    Generator function to stream text character by character
+    """
+    for char in text:
+        yield char
+        time.sleep(delay)
+
 # Page Configuration
 st.set_page_config(
     page_title="AgustoGPT - AI Research Assistant",
@@ -334,7 +343,7 @@ with chat_container:
         st.markdown("""
         <div class="welcome-container">
             <h2>Welcome to AgustoGPT</h2>
-            <p>Your AI Research Assistant, Ask questions about your reports and get intelligent insights.</p>
+            <p><span class="typewriter-text">Your AI Research Assistant, Ask questions about your reports and get intelligent insights.</span></p>
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -365,8 +374,17 @@ if prompt := st.chat_input("Ask a question about your reports..."):
                 st.session_state.filters
             )
 
-        # Display assistant response
-        st.markdown(response['response'])
+        # Display assistant response with streaming effect
+        response_placeholder = st.empty()
+        full_response = ""
+        
+        # Stream the response
+        for chunk in stream_text(response['response'], delay=0.003):
+            full_response += chunk
+            response_placeholder.markdown(full_response + "|")
+        
+        # Final display without cursor
+        response_placeholder.markdown(response['response'])
 
         # Add copy button
         plain_text = response['response']
