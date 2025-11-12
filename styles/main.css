@@ -218,6 +218,7 @@ header {visibility: hidden;}
 /* Streamlit Chat Message Styling - Assistant Messages */
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
     /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px) !important; */
+    border-left: 4px solid var(--agusto-navy) !important;
     border-radius: 0 0.5rem 0.5rem 0 !important;
     padding: 1.5rem 1.5rem 1.5rem 2rem !important;
     margin-bottom: 1rem !important;
