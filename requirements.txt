@@ -1,7 +1,10 @@
 # Core Framework
 streamlit>=1.50.0
 
-# For future API integration
+# UI Components
+st_copy
+
+# For API integration
 requests==2.31.0
 
 # Environment variables

@@ -36,7 +36,7 @@ header {visibility: hidden;}
 
 /* Sidebar Styling */
 [data-testid="stSidebar"] {
-    padding-top: 1rem;
+    padding-top: 0rem;
     width: 300px !important;
     min-width: 300px !important;
     max-width: 300px !important;
@@ -119,7 +119,94 @@ header {visibility: hidden;}
     font-size: 1.1rem;
 }
 
+/* Typewriter effect for welcome text */
+.typewriter-text {
+    border-right: 2px solid #6B7280;
+    white-space: nowrap;
+    display: inline-block;
+    animation: typing 3.5s steps(80, end), blink-caret 0.75s step-end 3;
+    animation-fill-mode: forwards;
+}
+
+@keyframes typing {
+    from { 
+        max-width: 0;
+        overflow: hidden;
+    }
+    to { 
+        max-width: 100%;
+        overflow: hidden;
+    }
+}
+
+@keyframes blink-caret {
+    from, to { 
+        border-color: transparent;
+    }
+    50% { 
+        border-color: #6B7280;
+    }
+}
+
+/* Streaming text effect for assistant responses */
+.streaming-text {
+    display: inline;
+}
+
+.streaming-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 1em;
+    background-color: #6B7280;
+    margin-left: 2px;
+    animation: cursor-blink 0.8s infinite;
+    vertical-align: text-bottom;
+}
+
+@keyframes cursor-blink {
+    0%, 49% {
+        opacity: 1;
+    }
+    50%, 100% {
+        opacity: 0;
+    }
+}
+
 /* Message Styling */
+/* Streamlit Chat Message Styling - User Messages */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+    background: linear-gradient(to right, var(--agusto-navy) 4px, #EFF6FF 4px) !important;
+    border-radius: 0 0.5rem 0.5rem 0 !important;
+    padding: 1rem 1rem 1rem 1.5rem !important;
+    margin-bottom: 1rem !important;
+}
+
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
+    background: transparent !important;
+    padding-top: 2rem;
+}
+
+/* Replace User Avatar Icon with Text */
+[data-testid="stChatMessageAvatarUser"] svg {
+    display: none !important;
+}
+
+[data-testid="stChatMessageAvatarUser"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--agusto-navy) !important;
+    background: transparent !important;
+    padding: 0.25rem 0 !important;
+}
+
+[data-testid="stChatMessageAvatarUser"]::before {
+    content: "Query" !important;
+    white-space: nowrap !important;
+}
+
 .user-message {
     background: linear-gradient(to right, var(--agusto-blue) 4px, #EFF6FF 4px);
     padding: 1rem 1rem 1rem 1.5rem;
@@ -128,11 +215,89 @@ header {visibility: hidden;}
     margin-top: 1.5rem;
 }
 
+/* Streamlit Chat Message Styling - Assistant Messages */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px) !important; */
+    border-left: 4px solid var(--agusto-navy) !important;
+    border-radius: 0 0.5rem 0.5rem 0 !important;
+    padding: 1.5rem 1.5rem 1.5rem 2rem !important;
+    margin-bottom: 1rem !important;
+}
+
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
+    background: transparent !important;
+    padding-top: 2rem;
+}
+
+/* Replace Assistant Avatar Icon with Text and Logo */
+[data-testid="stChatMessageAvatarAssistant"] svg {
+    display: none !important;
+}
+
+[data-testid="stChatMessageAvatarAssistant"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 0.5rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--agusto-navy) !important;
+    background: transparent !important;
+    padding: 0.25rem 0 !important;
+}
+
+/* Logo icon using background gradient */
+[data-testid="stChatMessageAvatarAssistant"]::before {
+    content: "" !important;
+    width: 20px !important;
+    height: 20px !important;
+    background:
+        linear-gradient(var(--agusto-gray), var(--agusto-gray)) 0 0 / 9px 9px no-repeat,
+        linear-gradient(var(--agusto-navy), var(--agusto-navy)) 11px 0 / 9px 9px no-repeat,
+        linear-gradient(var(--agusto-navy), var(--agusto-navy)) 0 11px / 9px 9px no-repeat,
+        linear-gradient(var(--agusto-gray), var(--agusto-gray)) 11px 11px / 9px 9px no-repeat !important;
+    flex-shrink: 0 !important;
+}
+
+[data-testid="stChatMessageAvatarAssistant"]::after {
+    content: "AgustoGPT" !important;
+    white-space: nowrap !important;
+}
+
 .assistant-message {
-    background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px);
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px); */
     padding: 1.5rem 1.5rem 1.5rem 2rem;
     border-radius: 0 0.5rem 0.5rem 0;
     margin-bottom: 1.5rem;
+}
+
+.assistant-message-container {
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px); */
+    padding: 1.5rem 1.5rem 1.5rem 2rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    margin-bottom: 1.5rem;
+}
+
+/* Wrapper for assistant messages with markdown */
+.assistant-message-wrapper {
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px); */
+    padding: 1.5rem 1.5rem 1.5rem 2rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    margin-bottom: 1.5rem;
+}
+
+/* Style Streamlit containers that have assistant-label */
+.assistant-label ~ div,
+.assistant-label ~ .element-container {
+    background: transparent !important;
+}
+
+/* Target the parent container of assistant messages */
+div:has(> .assistant-label) {
+    /* background: linear-gradient(to right, var(--agusto-green) 4px, #ECFDF5 4px) !important; */
+    padding: 1.5rem 1.5rem 1.5rem 2rem !important;
+    border-radius: 0 0.5rem 0.5rem 0 !important;
+    margin-bottom: 1.5rem !important;
 }
 
 .message-label {
@@ -151,6 +316,44 @@ header {visibility: hidden;}
     color: #059669;
 }
 
+.assistant-label {
+    color: #059669 !important;
+}
+
+/* Style markdown content in assistant messages */
+div:has(> .assistant-label) p,
+div:has(> .assistant-label) ul,
+div:has(> .assistant-label) ol,
+div:has(> .assistant-label) h1,
+div:has(> .assistant-label) h2,
+div:has(> .assistant-label) h3,
+div:has(> .assistant-label) h4,
+div:has(> .assistant-label) code,
+div:has(> .assistant-label) pre,
+div:has(> .assistant-label) li {
+    color: #1F2937 !important;
+    line-height: 1.6;
+}
+
+div:has(> .assistant-label) strong {
+    font-weight: 700 !important;
+    color: var(--agusto-navy) !important;
+}
+
+div:has(> .assistant-label) code {
+    background: #F3F4F6 !important;
+    padding: 0.2rem 0.4rem !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.9em !important;
+}
+
+div:has(> .assistant-label) pre {
+    background: #F3F4F6 !important;
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    overflow-x: auto !important;
+}
+
 .message-content {
     font-size: 0.95rem;
     line-height: 1.6;
@@ -160,7 +363,7 @@ header {visibility: hidden;}
 
 /* Sources Styling */
 .sources-container {
-    background: #F9FAFB;
+    background: white;
     border: 1px solid #E5E7EB;
     border-radius: 0.5rem;
     padding: 1.25rem;
@@ -170,9 +373,9 @@ header {visibility: hidden;}
 .sources-header {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--agusto-blue);
     margin-top: .75rem;
-    margin-bottom: 0rem;
+    margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.025em;
 }
@@ -180,30 +383,26 @@ header {visibility: hidden;}
 .source-item {
     background: white;
     border: 1px solid #E5E7EB;
-    border-left: 3px solid var(--agusto-blue);
     border-radius: 0.375rem;
     padding: 0.5rem 0.25rem;
-    margin-bottom: -.5rem !important;
-    transition: all 0.2s ease;
+    margin-bottom: 0.5rem !important;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
 .source-item:hover {
-    border-left-color: var(--agusto-navy);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transform: translateX(2px);
+    background: #F9FAFB;
 }
 
 .source-item:last-child {
-    margin-bottom: -1.5rem !important;
+    margin-bottom: 0 !important;
 }
 
 .source-report-name {
     font-size: 0.9rem;
     font-weight: 600;
-    color: var(--agusto-navy);
+    color: #374151;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -212,7 +411,7 @@ header {visibility: hidden;}
 
 .source-icon {
     font-size: 1.25rem !important;
-    color: var(--agusto-blue);
+    color: #6B7280;
 }
 
 .source-pages {
