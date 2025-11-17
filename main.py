@@ -8,10 +8,11 @@ from datetime import datetime
 import time
 import os
 import requests
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 from st_copy import copy_button
 import re
+from azure_storage import storage_manager
 
 # Load environment variables
 load_dotenv()
@@ -50,19 +51,34 @@ if 'messages' not in st.session_state:
 if 'search_mode' not in st.session_state:
     st.session_state.search_mode = 'auto'
 
+if 'chat_id' not in st.session_state:
+    st.session_state.chat_id = None
+
+if 'user_id' not in st.session_state:
+    # Use a placeholder user ID - in production, this would come from authentication
+    st.session_state.user_id = os.getenv('DEFAULT_USER_ID', 'default_user')
+
 if 'chat_history' not in st.session_state:
-    st.session_state.chat_history = [
-        {"id": "1", "title": "What are the key risks in the electricity sector?", "date": "Jan 15, 2025"},
-        {"id": "2", "title": "Compare banking performance 2024 vs 2025", "date": "Jan 14, 2025"},
-        {"id": "3", "title": "Telecommunications market outlook", "date": "Jan 13, 2025"},
-        {"id": "4", "title": "Oil & Gas Investment trends", "date": "Jan 12, 2025"},
-    ]
+    # Load chat history from Azure if available
+    if storage_manager.enabled:
+        st.session_state.chat_history = storage_manager.list_user_chats(st.session_state.user_id, limit=20)
+    else:
+        # Fallback to dummy data if Azure is not configured
+        st.session_state.chat_history = [
+            {"chat_id": "1", "title": "What are the key risks in the electricity sector?", "created_at": "2025-01-15"},
+            {"chat_id": "2", "title": "Compare banking performance 2024 vs 2025", "created_at": "2025-01-14"},
+            {"chat_id": "3", "title": "Telecommunications market outlook", "created_at": "2025-01-13"},
+            {"chat_id": "4", "title": "Oil & Gas Investment trends", "created_at": "2025-01-12"},
+        ]
 
 if 'filters' not in st.session_state:
     st.session_state.filters = {
         'industry_sector': '',
         'report_year': ''
     }
+
+if 'storage_enabled' not in st.session_state:
+    st.session_state.storage_enabled = storage_manager.enabled
 
 # Dummy Data
 DUMMY_RESPONSE = """Based on our analysis of the Nigerian electricity sector, the main challenges facing the industry in 2025 include:
@@ -192,6 +208,72 @@ def get_dummy_response(query, search_mode):
         "response": DUMMY_RESPONSE,
         "sources": DUMMY_SOURCES,
         "timestamp": datetime.now().isoformat()
+    }
+
+def save_current_chat():
+    """Save current chat session to Azure Storage"""
+    if not storage_manager.enabled or not st.session_state.messages:
+        return False
+    
+    # Generate chat ID if not exists
+    if not st.session_state.chat_id:
+        st.session_state.chat_id = storage_manager.generate_chat_id()
+    
+    # Prepare metadata
+    metadata = {
+        'search_mode': st.session_state.search_mode,
+        'filters': st.session_state.filters
+    }
+    
+    # Save to Azure
+    success = storage_manager.save_chat_session(
+        chat_id=st.session_state.chat_id,
+        user_id=st.session_state.user_id,
+        messages=st.session_state.messages,
+        metadata=metadata
+    )
+    
+    if success:
+        # Update chat history in session state
+        st.session_state.chat_history = storage_manager.list_user_chats(
+            st.session_state.user_id, 
+            limit=20
+        )
+    
+    return success
+
+def load_chat_session(chat_id: str):
+    """Load a chat session from Azure Storage"""
+    if not storage_manager.enabled:
+        return False
+    
+    chat_data = storage_manager.load_chat_session(
+        chat_id=chat_id,
+        user_id=st.session_state.user_id
+    )
+    
+    if chat_data:
+        st.session_state.messages = chat_data.get('messages', [])
+        st.session_state.chat_id = chat_id
+        
+        # Restore metadata if available
+        metadata = chat_data.get('metadata', {})
+        if 'search_mode' in metadata:
+            st.session_state.search_mode = metadata['search_mode']
+        if 'filters' in metadata:
+            st.session_state.filters = metadata['filters']
+        
+        return True
+    return False
+
+def start_new_chat():
+    """Start a new chat session"""
+    st.session_state.messages = []
+    st.session_state.chat_id = storage_manager.generate_chat_id() if storage_manager.enabled else None
+    st.session_state.search_mode = 'auto'
+    st.session_state.filters = {
+        'industry_sector': '',
+        'report_year': ''
     }
 
 def display_message(message):
@@ -324,12 +406,66 @@ with st.sidebar:
         
         st.markdown("---")
     
+    # New Chat Button
+    if st.button("➕ New Chat", use_container_width=True, type="primary"):
+        start_new_chat()
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Storage Status
+    if st.session_state.storage_enabled:
+        st.success("☁️ Cloud storage connected")
+    else:
+        st.warning("💾 Local mode (no cloud storage)")
+    
+    # User Info
+    st.info(f"👤 User: {st.session_state.user_id}")
+    if st.session_state.chat_id:
+        st.caption(f"Chat ID: {st.session_state.chat_id[:12]}...")
+    
+    st.markdown("---")
+    
     # Chat History
     st.subheader("Chat History")
-    for chat in st.session_state.chat_history:
-        if st.button(chat['title'], key=chat['id'], use_container_width=True):
-            st.info(f"Loading conversation: {chat['title']}")
-            # In production, load the actual chat
+    
+    if st.session_state.chat_history:
+        for chat in st.session_state.chat_history:
+            chat_id = chat.get('chat_id', chat.get('id', ''))
+            chat_title = chat.get('title', 'Untitled Chat')
+            
+            # Truncate long titles
+            if len(chat_title) > 40:
+                chat_title = chat_title[:37] + "..."
+            
+            # Format date
+            created_at = chat.get('created_at', chat.get('date', ''))
+            if created_at:
+                try:
+                    date_obj = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    formatted_date = date_obj.strftime("%b %d, %Y")
+                except:
+                    formatted_date = created_at[:10] if len(created_at) > 10 else created_at
+            else:
+                formatted_date = ""
+            
+            # Create button with date
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                if st.button(f"💬 {chat_title}", key=f"chat_{chat_id}", use_container_width=True):
+                    if storage_manager.enabled:
+                        with st.spinner("Loading chat..."):
+                            if load_chat_session(chat_id):
+                                st.success(f"Loaded: {chat_title}")
+                                st.rerun()
+                            else:
+                                st.error("Failed to load chat")
+                    else:
+                        st.info(f"Would load: {chat_title}")
+            with col2:
+                st.caption(formatted_date)
+    else:
+        st.info("No chat history available")
 
 # ===== MAIN CONTENT =====
 # st.markdown('<div class="main-header">AgustoGPT - AI Research Assistant</div>', unsafe_allow_html=True)
@@ -353,6 +489,10 @@ with chat_container:
 
 # Chat Input
 if prompt := st.chat_input("Ask a question about your reports..."):
+    # Generate chat ID if this is a new chat
+    if not st.session_state.chat_id and storage_manager.enabled:
+        st.session_state.chat_id = storage_manager.generate_chat_id()
+    
     # Add user message
     st.session_state.messages.append({
         "role": "user",
@@ -441,6 +581,26 @@ if prompt := st.chat_input("Ask a question about your reports..."):
         "sources": response['sources'],
         "timestamp": response['timestamp']
     })
+    
+    # Save chat session to Azure Storage
+    if storage_manager.enabled:
+        # Log the query/response interaction
+        storage_manager.log_query(
+            chat_id=st.session_state.chat_id,
+            user_id=st.session_state.user_id,
+            query=prompt,
+            response=response['response'],
+            search_mode=st.session_state.search_mode,
+            filters=st.session_state.filters,
+            sources=response.get('sources', [])
+        )
+        
+        # Save the full chat session
+        save_success = save_current_chat()
+        if save_success:
+            st.toast("Chat saved to cloud ☁️", icon="✅")
+        else:
+            st.toast("Failed to save chat", icon="⚠️")
 
     # Rerun to display new messages
     st.rerun()
