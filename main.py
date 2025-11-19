@@ -270,7 +270,8 @@ def start_new_chat():
     """Start a new chat session"""
     st.session_state.messages = []
     st.session_state.chat_id = storage_manager.generate_chat_id() if storage_manager.enabled else None
-    st.session_state.search_mode = 'auto'
+    # Keep the current search mode, don't reset to 'auto'
+    # st.session_state.search_mode = 'auto'
     st.session_state.filters = {
         'industry_sector': '',
         'report_year': ''
@@ -399,7 +400,7 @@ with st.sidebar:
     # Inject the HTML/CSS
     st.markdown(header_css_hack, unsafe_allow_html=True)
     
-    # Logo and Title (commented out)
+    # # Logo and Title (commented out)
     # st.markdown("""
     # <div class="sidebar-header">
     #     <div class="logo-container">
@@ -419,26 +420,60 @@ with st.sidebar:
     # Search Mode Selection
     st.subheader("Search Mode")
     
+    # Initialize timestamp for search mode changes
+    if 'search_mode_changed_at' not in st.session_state:
+        st.session_state.search_mode_changed_at = time.time()
+    
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Auto", icon=":material/search:", use_container_width=True,
                     type="primary" if st.session_state.search_mode == 'auto' else "secondary"):
             st.session_state.search_mode = 'auto'
+            st.session_state.search_mode_changed_at = time.time()
             st.rerun()
     with col2:
         if st.button("Tailored", icon=":material/my_location:", use_container_width=True,
                     type="primary" if st.session_state.search_mode == 'tailored' else "secondary"):
             st.session_state.search_mode = 'tailored'
+            st.session_state.search_mode_changed_at = time.time()
             st.rerun()
     
-    # Search Mode Description
+    # Timed Search Mode Description (auto-hide after 5 seconds using JS)
+    description_placeholder = st.empty()
+    if 'search_mode_msg_id' not in st.session_state:
+        st.session_state.search_mode_msg_id = 0
+    # Increment id whenever search mode changes (already captured above on button click)
+    current_id = int(st.session_state.search_mode_changed_at)
+    if st.session_state.search_mode_msg_id != current_id:
+        st.session_state.search_mode_msg_id = current_id
+    
+    # Always render message immediately after change; JS hides it after 5s
+    message_html = ""
     if st.session_state.search_mode == 'auto':
-        st.info("**Auto Search:** Intelligently finding the most relevant information from all reports.")
+        message_html = "<strong>Auto Search:</strong> Intelligently finding the most relevant information from all reports."
     else:
-        st.success("**Tailored Search:** Search within selected scope using filters below.")
+        message_html = "<strong>Tailored Search:</strong> Search within selected scope using filters below."
+    
+    description_placeholder.markdown(f"""
+    <div id="search-mode-msg-{st.session_state.search_mode_msg_id}" style="background:#EFF6FF;padding:0.75rem;border-radius:0.5rem;margin:0.5rem 0;font-size:0.85rem;color:#001B44;">{message_html}</div>
+    <script>
+    (function(){{
+        const id = 'search-mode-msg-{st.session_state.search_mode_msg_id}';
+        setTimeout(function(){{
+            const el = window.parent.document.getElementById(id);
+            if(el) el.style.display = 'none';
+        }}, 5000);
+    }})();
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # New Chat Button
+    if st.button("New Chat", icon=":material/edit_square:", use_container_width=True, type="primary"):
+        start_new_chat()
+        st.rerun()
     
     st.markdown("---")
-    
+        
     # Filters (only show in tailored mode)
     if st.session_state.search_mode == 'tailored':
         st.subheader("Report Filters")
@@ -466,11 +501,6 @@ with st.sidebar:
                 st.markdown(f'<div class="selected-report">{filter_val}</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="selected-report-more">No filters selected</div>', unsafe_allow_html=True)
-            
-    # New Chat Button
-    if st.button("New Chat", icon=":material/edit_square:", use_container_width=True, type="primary"):
-        start_new_chat()
-        st.rerun()
     
     # Chat History
     st.subheader("Chat History")
