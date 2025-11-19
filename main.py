@@ -336,6 +336,68 @@ def display_message(message):
 
 # ===== SIDEBAR =====
 with st.sidebar:
+    # User Info - Injected into Header via CSS
+    chat_display_id = st.session_state.chat_id[:12] if st.session_state.chat_id else 'None'
+    
+    header_css_hack = f"""
+    <style>
+        /* Target the Sidebar Content to allow overflow for our hoisted element */
+        div[data-testid="stSidebarContent"] {{
+            position: relative;
+            overflow: visible !important;
+        }}
+
+        /* Create the container that floats up into the header */
+        .header-overlay-container {{
+            position: absolute;
+            top: -3.75rem; /* Moves it up into the stSidebarHeader area */
+            left: 0;
+            width: 100%;
+            padding: 0 1rem;
+            z-index: 10000;
+            pointer-events: none;
+        }}
+
+        /* Style the user info box */
+        .custom-header-alert {{
+            background-color: transparent;
+            border: none;
+            color: var(--agusto-navy);
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            line-height: 1.4;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+        }}
+
+        .header-user-text {{
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+        }}
+
+        .custom-header-alert:hover .header-user-text {{
+            color: var(--agusto-blue);
+        }}
+    </style>
+
+    <div class="header-overlay-container">
+        <div class="custom-header-alert" role="alert">
+            <div class="header-user-text">
+                Welcome, {st.session_state.user_id}
+            </div>
+        </div>
+    </div>
+    """
+    
+    # Inject the HTML/CSS
+    st.markdown(header_css_hack, unsafe_allow_html=True)
+    
     # Logo and Title (commented out)
     # st.markdown("""
     # <div class="sidebar-header">
@@ -407,24 +469,9 @@ with st.sidebar:
         st.markdown("---")
     
     # New Chat Button
-    if st.button("➕ New Chat", use_container_width=True, type="primary"):
+    if st.button("New Chat", icon=":material/edit_square:", use_container_width=True, type="primary"):
         start_new_chat()
         st.rerun()
-    
-    st.markdown("---")
-    
-    # Storage Status
-    if st.session_state.storage_enabled:
-        st.success("☁️ Cloud storage connected")
-    else:
-        st.warning("💾 Local mode (no cloud storage)")
-    
-    # User Info
-    st.info(f"👤 User: {st.session_state.user_id}")
-    if st.session_state.chat_id:
-        st.caption(f"Chat ID: {st.session_state.chat_id[:12]}...")
-    
-    st.markdown("---")
     
     # Chat History
     st.subheader("Chat History")
@@ -435,35 +482,20 @@ with st.sidebar:
             chat_title = chat.get('title', 'Untitled Chat')
             
             # Truncate long titles
-            if len(chat_title) > 40:
-                chat_title = chat_title[:37] + "..."
+            if len(chat_title) > 50:
+                chat_title = chat_title[:47] + "..."
             
-            # Format date
-            created_at = chat.get('created_at', chat.get('date', ''))
-            if created_at:
-                try:
-                    date_obj = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    formatted_date = date_obj.strftime("%b %d, %Y")
-                except:
-                    formatted_date = created_at[:10] if len(created_at) > 10 else created_at
-            else:
-                formatted_date = ""
-            
-            # Create button with date
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                if st.button(f"💬 {chat_title}", key=f"chat_{chat_id}", use_container_width=True):
-                    if storage_manager.enabled:
-                        with st.spinner("Loading chat..."):
-                            if load_chat_session(chat_id):
-                                st.success(f"Loaded: {chat_title}")
-                                st.rerun()
-                            else:
-                                st.error("Failed to load chat")
-                    else:
-                        st.info(f"Would load: {chat_title}")
-            with col2:
-                st.caption(formatted_date)
+            # Create button with just the title
+            if st.button(chat_title, key=f"chat_{chat_id}", use_container_width=True):
+                if storage_manager.enabled:
+                    with st.spinner("Loading chat..."):
+                        if load_chat_session(chat_id):
+                            st.success(f"Loaded: {chat_title}")
+                            st.rerun()
+                        else:
+                            st.error("Failed to load chat")
+                else:
+                    st.info(f"Would load: {chat_title}")
     else:
         st.info("No chat history available")
 
