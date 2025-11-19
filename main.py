@@ -466,9 +466,7 @@ with st.sidebar:
                 st.markdown(f'<div class="selected-report">{filter_val}</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="selected-report-more">No filters selected</div>', unsafe_allow_html=True)
-        
-        st.markdown("---")
-    
+            
     # New Chat Button
     if st.button("New Chat", icon=":material/edit_square:", use_container_width=True, type="primary"):
         start_new_chat()
