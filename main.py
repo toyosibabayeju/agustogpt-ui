@@ -13,9 +13,14 @@ from dotenv import load_dotenv
 from st_copy import copy_button
 import re
 from azure_storage import storage_manager
+import extra_streamlit_components as stx
 
 # Load environment variables
 load_dotenv()
+
+# Initialize Cookie Manager
+# Note: Cookie manager should not be cached as it needs to read cookies on each request
+cookie_manager = stx.CookieManager()
 
 # Helper Functions
 def stream_text(text: str, delay: float = 0.02):
@@ -44,6 +49,100 @@ def load_css():
 
 load_css()
 
+# API Configuration
+AGENT_API_URL = os.getenv('AGENT_API_URL', 'http://localhost:8000')
+CLIENT_API_URL = os.getenv('CLIENT_API_URL', 'https://ami-be.ag-apps.agusto.com')
+
+# Functions
+def get_jwt_token():
+    """
+    Get JWT token from multiple sources (priority order):
+    1. Manual input (development mode)
+    2. HTTP cookies
+    3. Environment variables
+    """
+    # First check for manual JWT token input (development mode)
+    if st.session_state.get('manual_jwt_token'):
+        return st.session_state.manual_jwt_token
+    
+    # Try to get from cookies
+    try:
+        cookies = cookie_manager.get_all()
+        jwt_from_cookie = cookies.get('jwt_token') if cookies else None
+        
+        # Debug: Show available cookies (remove in production)
+        if os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
+            st.sidebar.caption(f"🔍 Available cookies: {list(cookies.keys()) if cookies else 'None'}")
+        
+        if jwt_from_cookie:
+            return jwt_from_cookie
+    except Exception as e:
+        # If cookie reading fails, log and continue to fallback
+        if os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
+            st.sidebar.error(f"Cookie read error: {str(e)}")
+    
+    # Fallback to environment variable (for development)
+    env_token = os.getenv('JWT_TOKEN', '')
+    if env_token and os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
+        st.sidebar.info("Using JWT from environment variable")
+    
+    return env_token
+
+def get_client_details() -> Dict[str, Any]:
+    """
+    Fetch client details from the client API using JWT from cookies
+    Returns client data including ID, company, country, and industry reports
+    Falls back to default user if API fails
+    """
+    try:
+        # Get JWT token from cookies
+        jwt_token = get_jwt_token()
+        
+        # Check if JWT token is available
+        if not jwt_token:
+            st.warning("No JWT token found in cookies. Using default user.")
+            return {
+                "id": "default_user",
+                "company": "Default Company",
+                "country": "Nigeria",
+                "industryReports": []
+            }
+        
+        # Make API request with JWT authentication
+        headers = {
+            "Authorization": f"Bearer {jwt_token}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.get(
+            f"{CLIENT_API_URL}/api/current-client",
+            headers=headers,
+            timeout=10
+        )
+        response.raise_for_status()
+        
+        # Parse and return client data
+        client_data = response.json()
+        return client_data
+        
+    except requests.exceptions.RequestException as e:
+        # Handle API errors gracefully
+        st.warning(f"Failed to fetch client details: {str(e)}. Using default user.")
+        return {
+            "id": "default_user",
+            "company": "Default Company",
+            "country": "Nigeria",
+            "industryReports": []
+        }
+    except Exception as e:
+        st.warning(f"Unexpected error fetching client details: {str(e)}. Using default user.")
+        return {
+            "id": "default_user",
+            "company": "Default Company",
+            "country": "Nigeria",
+            "industryReports": []
+        }
+
 # Initialize Session State
 if 'messages' not in st.session_state:
     st.session_state.messages = []
@@ -54,9 +153,14 @@ if 'search_mode' not in st.session_state:
 if 'chat_id' not in st.session_state:
     st.session_state.chat_id = None
 
-if 'user_id' not in st.session_state:
-    # Use a placeholder user ID - in production, this would come from authentication
-    st.session_state.user_id = os.getenv('DEFAULT_USER_ID', 'default_user')
+if 'user_id' not in st.session_state or 'client_data' not in st.session_state:
+    # Fetch client details from API
+    client_data = get_client_details()
+    st.session_state.client_data = client_data
+    st.session_state.user_id = client_data.get('id', 'default_user')
+    st.session_state.user_company = client_data.get('company', 'Default Company')
+    st.session_state.user_country = client_data.get('country', 'Nigeria')
+    st.session_state.user_reports = client_data.get('industryReports', [])
 
 if 'chat_history' not in st.session_state:
     # Load chat history from Azure if available
@@ -79,6 +183,12 @@ if 'filters' not in st.session_state:
 
 if 'storage_enabled' not in st.session_state:
     st.session_state.storage_enabled = storage_manager.enabled
+
+if 'manual_jwt_token' not in st.session_state:
+    st.session_state.manual_jwt_token = ''  # For development: manual JWT token input
+
+if 'enable_chat_history' not in st.session_state:
+    st.session_state.enable_chat_history = True  # Include chat history in queries by default
 
 # Dummy Data
 DUMMY_RESPONSE = """Based on our analysis of the Nigerian electricity sector, the main challenges facing the industry in 2025 include:
@@ -118,19 +228,67 @@ DUMMY_SOURCES = [
 INDUSTRY_SECTORS = ['', 'Oil & Gas Upstream', 'Oil & Gas Downstream', 'Insurance', 'Banking', 'Electricity', 'Telecommunications']
 REPORT_YEARS = ['', '2025', '2024', '2023', '2022', '2021']
 
-# API Configuration
-AGENT_API_URL = os.getenv('AGENT_API_URL', 'http://localhost:8000')
-
 # Functions
+
+def get_recent_chat_history(num_messages: int = 2) -> str:
+    """
+    Get the most recent chat messages for context
+    Returns formatted chat history string
+    """
+    messages = st.session_state.get('messages', [])
+    
+    if not messages:
+        return ""
+    
+    # Get the last N messages (excluding the current one being sent)
+    recent_messages = messages[-num_messages:] if len(messages) >= num_messages else messages
+    
+    # Format chat history
+    history_parts = []
+    for i, msg in enumerate(recent_messages, 1):
+        role = msg.get('role', 'unknown')
+        content = msg.get('content', '')
+        # Truncate very long messages
+        if len(content) > 200:
+            content = content[:197] + "..."
+        history_parts.append(f"{role}: {content}")
+    
+    if history_parts:
+        return "Chat History is: - " + ", ".join(history_parts) + ". See if the current user query relates to one of the chat history and answer accordingly. "
+    
+    return ""
+
 def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
     """
     Call the agent API to get response
     Supports both auto and tailored search modes
+    Includes recent chat history for context
     """
     try:
-        # Prepare payload
+        # Get client details and industry reports
+        client_data = st.session_state.get('client_data', {})
+        industry_reports = client_data.get('industryReports', [])
+        
+        # Convert industry reports list to a string, use empty string as fallback
+        industry_reports_str = ", ".join(industry_reports) if industry_reports else ""
+        
+        # Get recent chat history for context (if enabled)
+        chat_history = ""
+        if st.session_state.get('enable_chat_history', True):
+            chat_history = get_recent_chat_history(num_messages=2)
+        
+        # Append chat history to the query if it exists
+        # NOTE: This enhanced query is ONLY sent to the API, never displayed in UI
+        # The user sees only their original query in the chat interface
+        enhanced_query = chat_history + query if chat_history else query
+        
+        # Debug: Show what's being sent (if debug mode is enabled)
+        if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true' and chat_history:
+            st.sidebar.info(f"📝 Query with history: {enhanced_query[:150]}...")
+        
+        # Prepare base payload
         payload = {
-            "user_query": query
+            "user_query": enhanced_query
         }
 
         # Add filters for tailored search
@@ -139,17 +297,20 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
             if filters.get('report_year'):
                 payload['year_to_search'] = int(filters['report_year'])
             else:
-                payload['year_to_search'] = datetime.now().year
+                payload['year_to_search'] = ''
 
             # Add industry filter if specified
+            # Use selected industry sector in tailored mode if available
             if filters.get('industry_sector'):
                 payload['industry_to_search'] = filters['industry_sector']
             else:
-                payload['industry_to_search'] = ""
+                # If no specific industry selected in tailored mode, use industry reports string
+                payload['industry_to_search'] = industry_reports_str
         else:
-            # Auto search - use current year and empty industry
-            payload['year_to_search'] = datetime.now().year
-            payload['industry_to_search'] = ""
+            # Auto search - use current year and industry reports string
+            payload['year_to_search'] = ''
+            # In auto mode, always use the industry reports string for context
+            payload['industry_to_search'] = industry_reports_str
 
         # Make API request
         response = requests.post(
@@ -352,6 +513,23 @@ with st.sidebar:
     # """, unsafe_allow_html=True)
 
     # st.markdown("---")
+    
+    # User Info
+    user_display_id = st.session_state.user_id
+    # Truncate long user IDs for display
+    if len(user_display_id) > 20:
+        user_display_id = user_display_id[:17] + "..."
+    
+    st.info(f"👤 User: {user_display_id}")
+    
+    # Show company if available
+    if st.session_state.get('user_company') and st.session_state.user_company != 'Default Company':
+        st.caption(f"🏢 {st.session_state.user_company}")
+    
+    # Show available reports count
+    if st.session_state.get('user_reports'):
+        reports_count = len(st.session_state.user_reports)
+        st.caption(f"📚 {reports_count} report{'s' if reports_count != 1 else ''} available")
 
     # Search Mode Selection
     st.subheader("Search Mode")
@@ -415,14 +593,12 @@ with st.sidebar:
     
     # Storage Status
     if st.session_state.storage_enabled:
-        st.success("☁️ Cloud storage connected")
+        st.success("☁️")
     else:
-        st.warning("💾 Local mode (no cloud storage)")
+        st.warning("💾")
     
-    # User Info
-    st.info(f"👤 User: {st.session_state.user_id}")
     if st.session_state.chat_id:
-        st.caption(f"Chat ID: {st.session_state.chat_id[:12]}...")
+        st.caption(f"💬 Chat ID: {st.session_state.chat_id[:12]}...")
     
     st.markdown("---")
     
@@ -466,6 +642,71 @@ with st.sidebar:
                 st.caption(formatted_date)
     else:
         st.info("No chat history available")
+    
+    # Development Mode: Manual JWT Token Input
+    if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+        st.markdown("---")
+        st.subheader("🔧 Development Mode")
+        
+        with st.expander("Manual JWT Token", expanded=False):
+            st.caption("For testing when cookies don't work")
+            manual_token = st.text_area(
+                "JWT Token",
+                value=st.session_state.manual_jwt_token,
+                placeholder="Paste JWT token here...",
+                height=100,
+                key="jwt_input_field"
+            )
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Set Token", use_container_width=True, type="primary"):
+                    st.session_state.manual_jwt_token = manual_token
+                    # Clear cached client data to force re-fetch
+                    if 'client_data' in st.session_state:
+                        del st.session_state.client_data
+                        del st.session_state.user_id
+                    st.success("Token set! Reloading...")
+                    st.rerun()
+            
+            with col2:
+                if st.button("Clear Token", use_container_width=True):
+                    st.session_state.manual_jwt_token = ''
+                    if 'client_data' in st.session_state:
+                        del st.session_state.client_data
+                        del st.session_state.user_id
+                    st.success("Token cleared! Reloading...")
+                    st.rerun()
+            
+            if st.session_state.manual_jwt_token:
+                st.success("✅ Manual token is active")
+            else:
+                st.info("No manual token set")
+        
+        # Chat History Context Toggle
+        with st.expander("Chat History Context", expanded=False):
+            st.caption("Include recent chat messages for context-aware responses")
+            
+            enable_history = st.checkbox(
+                "Include last 2 messages in queries",
+                value=st.session_state.enable_chat_history,
+                key="chat_history_toggle"
+            )
+            
+            if enable_history != st.session_state.enable_chat_history:
+                st.session_state.enable_chat_history = enable_history
+                st.rerun()
+            
+            if st.session_state.enable_chat_history:
+                st.success("✅ Chat history context is enabled")
+                # Show preview of what will be included
+                if st.session_state.messages:
+                    preview = get_recent_chat_history(num_messages=2)
+                    if preview:
+                        st.caption("Preview of context:")
+                        st.code(preview[:150] + "..." if len(preview) > 150 else preview)
+            else:
+                st.info("Chat history context is disabled")
 
 # ===== MAIN CONTENT =====
 # st.markdown('<div class="main-header">AgustoGPT - AI Research Assistant</div>', unsafe_allow_html=True)
@@ -493,19 +734,23 @@ if prompt := st.chat_input("Ask a question about your reports..."):
     if not st.session_state.chat_id and storage_manager.enabled:
         st.session_state.chat_id = storage_manager.generate_chat_id()
     
-    # Add user message
+    # Add user message (store only the original prompt, not enhanced version)
     st.session_state.messages.append({
         "role": "user",
-        "content": prompt,
+        "content": prompt,  # Original query only
         "timestamp": datetime.now().isoformat()
     })
 
-    # Display user message
+    # Display user message (show only original query to user)
     with st.chat_message("user"):
-        st.markdown(prompt)
+        st.markdown(prompt)  # Display original query, not enhanced version
 
     # Show loading and get response
     with st.chat_message("assistant"):
+        # Show indicator if using chat history context
+        if st.session_state.get('enable_chat_history', True) and len(st.session_state.messages) > 1:
+            st.caption("💬 Using conversation context...")
+        
         with st.spinner("Thinking..."):
             # Get response from agent API
             response = call_agent_api(
