@@ -344,7 +344,8 @@ with st.sidebar:
         /* Target the Sidebar Content to allow overflow for our hoisted element */
         div[data-testid="stSidebarContent"] {{
             position: relative;
-            overflow: visible !important;
+            overflow-x: visible !important;
+            overflow-y: auto !important;
         }}
 
         /* Create the container that floats up into the header */
