@@ -450,7 +450,7 @@ with st.sidebar:
     # Always render message immediately after change; JS hides it after 5s
     message_html = ""
     if st.session_state.search_mode == 'auto':
-        message_html = "<strong>Auto Search:</strong> Intelligently finding the most relevant information from all reports."
+        message_html = "<strong>Auto Search:</strong> Intelligently finding the relevant information from all reports."
     else:
         message_html = "<strong>Tailored Search:</strong> Search within selected scope using filters below."
     

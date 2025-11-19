@@ -37,9 +37,9 @@ header {visibility: hidden;}
 /* Sidebar Styling */
 [data-testid="stSidebar"] {
     padding-top: 0rem;
-    width: 320px !important;
-    min-width: 320px !important;
-    max-width: 320px !important;
+    width: 300px !important;
+    min-width: 300px !important;
+    max-width: 300px !important;
 }
 
 /* Hide the sidebar collapse button completely */
