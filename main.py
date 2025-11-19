@@ -476,57 +476,55 @@ with st.sidebar:
         
     # Filters (only show in tailored mode)
     if st.session_state.search_mode == 'tailored':
-        st.subheader("Report Filters")
-        
-        st.session_state.filters['industry_sector'] = st.selectbox(
-            "Industry Sector:",
-            INDUSTRY_SECTORS
-        )
+        with st.expander("Report Filters", expanded=True):
+            st.session_state.filters['industry_sector'] = st.selectbox(
+                "Industry Sector:",
+                INDUSTRY_SECTORS
+            )
 
-        st.session_state.filters['report_year'] = st.selectbox(
-            "Report Year:",
-            REPORT_YEARS
-        )
+            st.session_state.filters['report_year'] = st.selectbox(
+                "Report Year:",
+                REPORT_YEARS
+            )
 
-        # Show selected filters
-        st.markdown("**Active Filters**")
-        active_filters = []
-        if st.session_state.filters.get('industry_sector'):
-            active_filters.append(st.session_state.filters['industry_sector'])
-        if st.session_state.filters.get('report_year'):
-            active_filters.append(st.session_state.filters['report_year'])
+            # Show selected filters
+            st.markdown("**Active Filters**")
+            active_filters = []
+            if st.session_state.filters.get('industry_sector'):
+                active_filters.append(st.session_state.filters['industry_sector'])
+            if st.session_state.filters.get('report_year'):
+                active_filters.append(st.session_state.filters['report_year'])
 
-        if active_filters:
-            for filter_val in active_filters:
-                st.markdown(f'<div class="selected-report">{filter_val}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="selected-report-more">No filters selected</div>', unsafe_allow_html=True)
+            if active_filters:
+                for filter_val in active_filters:
+                    st.markdown(f'<div class="selected-report">{filter_val}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="selected-report-more">No filters selected</div>', unsafe_allow_html=True)
     
     # Chat History
-    st.subheader("Chat History")
-    
-    if st.session_state.chat_history:
-        for chat in st.session_state.chat_history:
-            chat_id = chat.get('chat_id', chat.get('id', ''))
-            chat_title = chat.get('title', 'Untitled Chat')
-            
-            # Truncate long titles
-            if len(chat_title) > 50:
-                chat_title = chat_title[:47] + "..."
-            
-            # Create button with just the title
-            if st.button(chat_title, key=f"chat_{chat_id}", use_container_width=True):
-                if storage_manager.enabled:
-                    with st.spinner("Loading chat..."):
-                        if load_chat_session(chat_id):
-                            st.success(f"Loaded: {chat_title}")
-                            st.rerun()
-                        else:
-                            st.error("Failed to load chat")
-                else:
-                    st.info(f"Would load: {chat_title}")
-    else:
-        st.info("No chat history available")
+    with st.expander("Chat History", expanded=True):
+        if st.session_state.chat_history:
+            for chat in st.session_state.chat_history:
+                chat_id = chat.get('chat_id', chat.get('id', ''))
+                chat_title = chat.get('title', 'Untitled Chat')
+                
+                # Truncate long titles
+                if len(chat_title) > 50:
+                    chat_title = chat_title[:47] + "..."
+                
+                # Create button with just the title
+                if st.button(chat_title, key=f"chat_{chat_id}", use_container_width=True):
+                    if storage_manager.enabled:
+                        with st.spinner("Loading chat..."):
+                            if load_chat_session(chat_id):
+                                st.success(f"Loaded: {chat_title}")
+                                st.rerun()
+                            else:
+                                st.error("Failed to load chat")
+                    else:
+                        st.info(f"Would load: {chat_title}")
+        else:
+            st.info("No chat history available")
 
 # ===== MAIN CONTENT =====
 # st.markdown('<div class="main-header">AgustoGPT - AI Research Assistant</div>', unsafe_allow_html=True)
