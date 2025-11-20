@@ -3,6 +3,7 @@ streamlit>=1.50.0
 
 # UI Components
 st-copy
+extra-streamlit-components==0.1.71
 
 # For API integration
 requests==2.31.0
