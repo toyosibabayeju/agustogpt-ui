@@ -464,7 +464,7 @@ def start_new_chat():
         'report_year': ''
     }
 
-def display_message(message):
+def display_message(message, message_index=None):
     """Display a single message (user or assistant)"""
     role = message.get('role', message.get('type', 'user'))  # Support both 'role' and 'type' keys
 
@@ -527,8 +527,14 @@ def display_message(message):
             
             # Display recommended queries as buttons
             for idx, query in enumerate(message['recommended_queries']):
-                # Create unique key for each button
-                button_key = f"recommended_{message.get('timestamp', '')}_{idx}"
+                # Create unique key using message index and query index
+                # Use timestamp as fallback if message_index is not provided
+                if message_index is not None:
+                    button_key = f"recommended_msg{message_index}_q{idx}"
+                else:
+                    # Fallback: use timestamp with replacements to avoid special chars
+                    timestamp_key = message.get('timestamp', '').replace(':', '').replace('.', '').replace('-', '')
+                    button_key = f"recommended_{timestamp_key}_{idx}"
                 
                 if st.button(
                     f"💬 {query}",
@@ -758,10 +764,8 @@ with st.sidebar:
                                 st.error("Failed to load chat")
                     else:
                         st.info(f"Would load: {chat_title}")
-            with col2:
-                st.caption(formatted_date)
-    else:
-        st.info("No chat history available")
+        else:
+            st.info("No chat history available")
     
     # Development Mode: Manual JWT Token Input
     if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
@@ -827,8 +831,6 @@ with st.sidebar:
                         st.code(preview[:150] + "..." if len(preview) > 150 else preview)
             else:
                 st.info("Chat history context is disabled")
-        else:
-            st.info("No chat history available")
 
 # ===== MAIN CONTENT =====
 # st.markdown('<div class="main-header">AgustoGPT - AI Research Assistant</div>', unsafe_allow_html=True)
@@ -847,8 +849,8 @@ with chat_container:
         """, unsafe_allow_html=True)
     else:
         # Display all messages
-        for message in st.session_state.messages:
-            display_message(message)
+        for idx, message in enumerate(st.session_state.messages):
+            display_message(message, message_index=idx)
 
 # Handle recommended query trigger
 if st.session_state.get('trigger_recommended_query', False):
@@ -955,11 +957,14 @@ if prompt or (prompt := st.chat_input("Ask a question about your reports...")):
             
             # Get current message count for unique keys
             msg_count = len(st.session_state.messages)
+            # Add timestamp to ensure uniqueness
+            import hashlib
+            unique_id = hashlib.md5(f"{msg_count}_{time.time()}".encode()).hexdigest()[:8]
             
             # Display recommended queries as buttons
             for idx, query in enumerate(response['recommended_queries']):
                 # Create unique key for each button
-                button_key = f"rec_current_{msg_count}_{idx}"
+                button_key = f"rec_current_{unique_id}_{idx}"
                 
                 if st.button(
                     f"💬 {query}",
