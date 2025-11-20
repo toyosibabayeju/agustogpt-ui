@@ -635,9 +635,7 @@ with st.sidebar:
     # Truncate long user IDs for display
     if len(user_display_id) > 20:
         user_display_id = user_display_id[:17] + "..."
-    
-    st.info(f"👤 User: {user_display_id}")
-    
+        
     # Show company if available
     if st.session_state.get('user_company') and st.session_state.user_company != 'Default Company':
         st.caption(f"🏢 {st.session_state.user_company}")
