@@ -470,7 +470,7 @@ div:has(> .assistant-label) pre {
 .stButton > button {
     border-radius: 0.5rem;
     font-weight: 500;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
 }
 
 .stButton > button[kind="primary"] {
@@ -478,12 +478,8 @@ div:has(> .assistant-label) pre {
     border: none;
 }
 
-.stButton > button[kind="primary"]:hover {
-    background-color: #002a66;
-}
-
-/* Sidebar Buttons */
-[data-testid="stSidebar"] .stButton > button {
+/* Sidebar Buttons - Non-primary (inactive state) */
+[data-testid="stSidebar"] .stButton > button:not([kind="primary"]) {
     width: 100%;
     text-align: left;
     font-size: 0.9rem;
@@ -491,8 +487,25 @@ div:has(> .assistant-label) pre {
     border-radius: 0.5rem;
 }
 
-[data-testid="stSidebar"] .stButton > button:hover {
-    background-color: #F3F4F6;
+[data-testid="stSidebar"] .stButton > button:not([kind="primary"]):hover {
+    background-color: #EBF5FF !important;
+    color: var(--agusto-navy) !important;
+}
+
+/* Sidebar Primary Buttons (active/selected state like New Chat, active search mode) */
+[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    width: 100%;
+    text-align: left;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+}
+
+/* Hover for primary buttons in sidebar - NO color change, just shadow + lift */
+[data-testid="stSidebar"] .stButton > button[kind="primary"]:hover {
+    background-color: var(--agusto-navy) !important; /* Keep same navy color */
+    box-shadow: 0 4px 12px rgba(0, 27, 68, 0.4) !important;
+    transform: translateY(-1px) !important;
 }
 
 /* Input Field Styling */

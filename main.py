@@ -457,7 +457,8 @@ def start_new_chat():
     """Start a new chat session"""
     st.session_state.messages = []
     st.session_state.chat_id = storage_manager.generate_chat_id() if storage_manager.enabled else None
-    st.session_state.search_mode = 'auto'
+    # Keep the current search mode, don't reset to 'auto'
+    # st.session_state.search_mode = 'auto'
     st.session_state.filters = {
         'industry_sector': '',
         'report_year': ''
@@ -543,7 +544,70 @@ def display_message(message):
 
 # ===== SIDEBAR =====
 with st.sidebar:
-    # Logo and Title (commented out)
+    # User Info - Injected into Header via CSS
+    chat_display_id = st.session_state.chat_id[:12] if st.session_state.chat_id else 'None'
+    
+    header_css_hack = f"""
+    <style>
+        /* Target the Sidebar Content to allow overflow for our hoisted element */
+        div[data-testid="stSidebarContent"] {{
+            position: relative;
+            overflow-x: visible !important;
+            overflow-y: auto !important;
+        }}
+
+        /* Create the container that floats up into the header */
+        .header-overlay-container {{
+            position: absolute;
+            top: -3.75rem; /* Moves it up into the stSidebarHeader area */
+            left: 0;
+            width: 100%;
+            padding: 0 1rem;
+            z-index: 10000;
+            pointer-events: none;
+        }}
+
+        /* Style the user info box */
+        .custom-header-alert {{
+            background-color: transparent;
+            border: none;
+            color: var(--agusto-navy);
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            line-height: 1.4;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+        }}
+
+        .header-user-text {{
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+        }}
+
+        .custom-header-alert:hover .header-user-text {{
+            color: var(--agusto-blue);
+        }}
+    </style>
+
+    <div class="header-overlay-container">
+        <div class="custom-header-alert" role="alert">
+            <div class="header-user-text">
+                Welcome, {st.session_state.user_id}
+            </div>
+        </div>
+    </div>
+    """
+    
+    # Inject the HTML/CSS
+    st.markdown(header_css_hack, unsafe_allow_html=True)
+    
+    # # Logo and Title (commented out)
     # st.markdown("""
     # <div class="sidebar-header">
     #     <div class="logo-container">
@@ -580,58 +644,55 @@ with st.sidebar:
     # Search Mode Selection
     st.subheader("Search Mode")
     
+    # Initialize timestamp for search mode changes
+    if 'search_mode_changed_at' not in st.session_state:
+        st.session_state.search_mode_changed_at = time.time()
+    
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Auto", icon=":material/search:", use_container_width=True,
                     type="primary" if st.session_state.search_mode == 'auto' else "secondary"):
             st.session_state.search_mode = 'auto'
+            st.session_state.search_mode_changed_at = time.time()
             st.rerun()
     with col2:
         if st.button("Tailored", icon=":material/my_location:", use_container_width=True,
                     type="primary" if st.session_state.search_mode == 'tailored' else "secondary"):
             st.session_state.search_mode = 'tailored'
+            st.session_state.search_mode_changed_at = time.time()
             st.rerun()
     
-    # Search Mode Description
+    # Timed Search Mode Description (auto-hide after 5 seconds using JS)
+    description_placeholder = st.empty()
+    if 'search_mode_msg_id' not in st.session_state:
+        st.session_state.search_mode_msg_id = 0
+    # Increment id whenever search mode changes (already captured above on button click)
+    current_id = int(st.session_state.search_mode_changed_at)
+    if st.session_state.search_mode_msg_id != current_id:
+        st.session_state.search_mode_msg_id = current_id
+    
+    # Always render message immediately after change; JS hides it after 5s
+    message_html = ""
     if st.session_state.search_mode == 'auto':
-        st.info("**Auto Search:** Intelligently finding the most relevant information from all reports.")
+        message_html = "<strong>Auto Search:</strong> Intelligently finding the relevant information from all reports."
     else:
-        st.success("**Tailored Search:** Search within selected scope using filters below.")
+        message_html = "<strong>Tailored Search:</strong> Search within selected scope using filters below."
     
-    st.markdown("---")
-    
-    # Filters (only show in tailored mode)
-    if st.session_state.search_mode == 'tailored':
-        st.subheader("Report Filters")
-        
-        st.session_state.filters['industry_sector'] = st.selectbox(
-            "Industry Sector:",
-            INDUSTRY_SECTORS
-        )
-
-        st.session_state.filters['report_year'] = st.selectbox(
-            "Report Year:",
-            REPORT_YEARS
-        )
-
-        # Show selected filters
-        st.markdown("**Active Filters**")
-        active_filters = []
-        if st.session_state.filters.get('industry_sector'):
-            active_filters.append(st.session_state.filters['industry_sector'])
-        if st.session_state.filters.get('report_year'):
-            active_filters.append(st.session_state.filters['report_year'])
-
-        if active_filters:
-            for filter_val in active_filters:
-                st.markdown(f'<div class="selected-report">{filter_val}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="selected-report-more">No filters selected</div>', unsafe_allow_html=True)
-        
-        st.markdown("---")
+    description_placeholder.markdown(f"""
+    <div id="search-mode-msg-{st.session_state.search_mode_msg_id}" style="background:#EFF6FF;padding:0.75rem;border-radius:0.5rem;margin:0.5rem 0;font-size:0.85rem;color:#001B44;">{message_html}</div>
+    <script>
+    (function(){{
+        const id = 'search-mode-msg-{st.session_state.search_mode_msg_id}';
+        setTimeout(function(){{
+            const el = window.parent.document.getElementById(id);
+            if(el) el.style.display = 'none';
+        }}, 5000);
+    }})();
+    </script>
+    """, unsafe_allow_html=True)
     
     # New Chat Button
-    if st.button("➕ New Chat", use_container_width=True, type="primary"):
+    if st.button("New Chat", icon=":material/edit_square:", use_container_width=True, type="primary"):
         start_new_chat()
         st.rerun()
     
@@ -647,34 +708,47 @@ with st.sidebar:
         st.caption(f"💬 Chat ID: {st.session_state.chat_id[:12]}...")
     
     st.markdown("---")
+        
+    # Filters (only show in tailored mode)
+    if st.session_state.search_mode == 'tailored':
+        with st.expander("Report Filters", expanded=True):
+            st.session_state.filters['industry_sector'] = st.selectbox(
+                "Industry Sector:",
+                INDUSTRY_SECTORS
+            )
+
+            st.session_state.filters['report_year'] = st.selectbox(
+                "Report Year:",
+                REPORT_YEARS
+            )
+
+            # Show selected filters
+            st.markdown("**Active Filters**")
+            active_filters = []
+            if st.session_state.filters.get('industry_sector'):
+                active_filters.append(st.session_state.filters['industry_sector'])
+            if st.session_state.filters.get('report_year'):
+                active_filters.append(st.session_state.filters['report_year'])
+
+            if active_filters:
+                for filter_val in active_filters:
+                    st.markdown(f'<div class="selected-report">{filter_val}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="selected-report-more">No filters selected</div>', unsafe_allow_html=True)
     
     # Chat History
-    st.subheader("Chat History")
-    
-    if st.session_state.chat_history:
-        for chat in st.session_state.chat_history:
-            chat_id = chat.get('chat_id', chat.get('id', ''))
-            chat_title = chat.get('title', 'Untitled Chat')
-            
-            # Truncate long titles
-            if len(chat_title) > 40:
-                chat_title = chat_title[:37] + "..."
-            
-            # Format date
-            created_at = chat.get('created_at', chat.get('date', ''))
-            if created_at:
-                try:
-                    date_obj = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    formatted_date = date_obj.strftime("%b %d, %Y")
-                except:
-                    formatted_date = created_at[:10] if len(created_at) > 10 else created_at
-            else:
-                formatted_date = ""
-            
-            # Create button with date
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                if st.button(f"💬 {chat_title}", key=f"chat_{chat_id}", use_container_width=True):
+    with st.expander("Chat History", expanded=True):
+        if st.session_state.chat_history:
+            for chat in st.session_state.chat_history:
+                chat_id = chat.get('chat_id', chat.get('id', ''))
+                chat_title = chat.get('title', 'Untitled Chat')
+                
+                # Truncate long titles
+                if len(chat_title) > 50:
+                    chat_title = chat_title[:47] + "..."
+                
+                # Create button with just the title
+                if st.button(chat_title, key=f"chat_{chat_id}", use_container_width=True):
                     if storage_manager.enabled:
                         with st.spinner("Loading chat..."):
                             if load_chat_session(chat_id):
@@ -753,6 +827,8 @@ with st.sidebar:
                         st.code(preview[:150] + "..." if len(preview) > 150 else preview)
             else:
                 st.info("Chat history context is disabled")
+        else:
+            st.info("No chat history available")
 
 # ===== MAIN CONTENT =====
 # st.markdown('<div class="main-header">AgustoGPT - AI Research Assistant</div>', unsafe_allow_html=True)
