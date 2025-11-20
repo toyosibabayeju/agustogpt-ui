@@ -178,11 +178,11 @@ The UI sends requests to the agent API with the following structure:
 ```
 
 **Auto Search Mode**: 
-- Uses current year for `year_to_search`
+- Always uses current year (e.g., 2025) for `year_to_search`
 - Sends user's industry reports (comma-separated) in `industry_to_search` field
 
 **Tailored Search Mode**: 
-- Uses selected year filter (or current year if not selected)
+- Uses selected year filter, or defaults to current year if not selected
 - If specific industry is selected: sends that in `industry_to_search` 
 - If no specific industry selected: sends user's industry reports in `industry_to_search`
 
@@ -221,11 +221,37 @@ The agent API returns responses in this format:
     }
   ],
   "response": "Based on our analysis...",
-  "current_date": "2025-10-25"
+  "current_date": "2025-10-25",
+  "recommended_queries": [
+    "What are the growth projections for the oil and gas sector?",
+    "How do these trends compare to the downstream sector?",
+    "What are the key challenges facing the industry?"
+  ]
 }
 ```
 
-The UI formats this into user-friendly source citations.
+The UI formats this into:
+- User-friendly source citations
+- Interactive recommended query buttons that users can click to continue the conversation
+
+### Recommended Queries Feature
+
+The AI agent can suggest follow-up questions to help users explore topics more deeply. These appear as clickable buttons below each response:
+
+**Features:**
+- 💡 Intelligent suggestions based on the current response
+- 💬 One-click to ask the recommended question
+- 🔄 Automatically includes conversation context
+- 📝 Previous response is added to chat history for context
+
+**Example Flow:**
+1. User asks: "What are the key risks in banking?"
+2. AI responds with analysis
+3. Recommended buttons appear:
+   - "How do these risks compare to 2023?"
+   - "What mitigation strategies are recommended?"
+   - "How does this affect insurance sector?"
+4. User clicks a button → Query is automatically sent with full context
 
 ## Project Structure
 

@@ -190,6 +190,12 @@ if 'manual_jwt_token' not in st.session_state:
 if 'enable_chat_history' not in st.session_state:
     st.session_state.enable_chat_history = True  # Include chat history in queries by default
 
+if 'recommended_query' not in st.session_state:
+    st.session_state.recommended_query = None  # Store recommended query to be processed
+
+if 'trigger_recommended_query' not in st.session_state:
+    st.session_state.trigger_recommended_query = False  # Flag to trigger recommended query
+
 # Dummy Data
 DUMMY_RESPONSE = """Based on our analysis of the Nigerian electricity sector, the main challenges facing the industry in 2025 include:
 
@@ -280,7 +286,7 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
         # Append chat history to the query if it exists
         # NOTE: This enhanced query is ONLY sent to the API, never displayed in UI
         # The user sees only their original query in the chat interface
-        enhanced_query = chat_history + query if chat_history else query
+        enhanced_query = chat_history + 'the current user query is: ' + query + ' ' if chat_history else query
         
         # Debug: Show what's being sent (if debug mode is enabled)
         if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true' and chat_history:
@@ -293,11 +299,11 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
 
         # Add filters for tailored search
         if search_mode == 'tailored' and filters:
-            # Add year filter if specified
+            # Add year filter if specified, otherwise use current year
             if filters.get('report_year'):
                 payload['year_to_search'] = int(filters['report_year'])
             else:
-                payload['year_to_search'] = ''
+                payload['year_to_search'] = datetime.now().year
 
             # Add industry filter if specified
             # Use selected industry sector in tailored mode if available
@@ -308,10 +314,14 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
                 payload['industry_to_search'] = industry_reports_str
         else:
             # Auto search - use current year and industry reports string
-            payload['year_to_search'] = ''
+            payload['year_to_search'] = datetime.now().year
             # In auto mode, always use the industry reports string for context
             payload['industry_to_search'] = industry_reports_str
 
+        # Debug: Log payload before sending (if debug mode enabled)
+        if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
+            st.sidebar.json(payload)
+        
         # Make API request
         response = requests.post(
             f"{AGENT_API_URL}/query",
@@ -341,20 +351,35 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
         return {
             "response": data.get('response', 'No response generated'),
             "sources": sources,
+            "recommended_queries": data.get('recommended_queries', []),
             "timestamp": data.get('current_date', datetime.now().isoformat())
         }
 
     except requests.exceptions.RequestException as e:
         # Handle API errors gracefully
+        error_msg = f"Error connecting to agent API: {str(e)}\n\nPlease ensure the agent API is running at {AGENT_API_URL}"
+        
+        # If it's a 422 error, provide more details
+        if hasattr(e, 'response') and e.response is not None:
+            if e.response.status_code == 422:
+                try:
+                    error_detail = e.response.json()
+                    error_msg += f"\n\n**Validation Error Details:**\n```json\n{error_detail}\n```"
+                    error_msg += f"\n\n**Payload Sent:**\n```json\n{payload}\n```"
+                except:
+                    error_msg += f"\n\nResponse: {e.response.text}"
+        
         return {
-            "response": f"Error connecting to agent API: {str(e)}\n\nPlease ensure the agent API is running at {AGENT_API_URL}",
+            "response": error_msg,
             "sources": [],
+            "recommended_queries": [],
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
         return {
             "response": f"Unexpected error: {str(e)}",
             "sources": [],
+            "recommended_queries": [],
             "timestamp": datetime.now().isoformat()
         }
 
@@ -368,6 +393,7 @@ def get_dummy_response(query, search_mode):
     return {
         "response": DUMMY_RESPONSE,
         "sources": DUMMY_SOURCES,
+        "recommended_queries": [],
         "timestamp": datetime.now().isoformat()
     }
 
@@ -493,6 +519,26 @@ def display_message(message):
                     <div class="source-pages">{pages_text}</div>
                 </div>
                 """, unsafe_allow_html=True)
+        
+        # Display recommended queries as buttons (for assistant messages)
+        if role == 'assistant' and 'recommended_queries' in message and message['recommended_queries']:
+            st.markdown('<div class="sources-header">💡 You might also want to ask:</div>', unsafe_allow_html=True)
+            
+            # Display recommended queries as buttons
+            for idx, query in enumerate(message['recommended_queries']):
+                # Create unique key for each button
+                button_key = f"recommended_{message.get('timestamp', '')}_{idx}"
+                
+                if st.button(
+                    f"💬 {query}",
+                    key=button_key,
+                    use_container_width=True,
+                    type="secondary"
+                ):
+                    # Store the recommended query to be processed
+                    st.session_state.recommended_query = query
+                    st.session_state.trigger_recommended_query = True
+                    st.rerun()
 
 
 # ===== SIDEBAR =====
@@ -728,8 +774,16 @@ with chat_container:
         for message in st.session_state.messages:
             display_message(message)
 
+# Handle recommended query trigger
+if st.session_state.get('trigger_recommended_query', False):
+    prompt = st.session_state.recommended_query
+    st.session_state.trigger_recommended_query = False
+    st.session_state.recommended_query = None
+else:
+    prompt = None
+
 # Chat Input
-if prompt := st.chat_input("Ask a question about your reports..."):
+if prompt or (prompt := st.chat_input("Ask a question about your reports...")):
     # Generate chat ID if this is a new chat
     if not st.session_state.chat_id and storage_manager.enabled:
         st.session_state.chat_id = storage_manager.generate_chat_id()
@@ -818,12 +872,36 @@ if prompt := st.chat_input("Ask a question about your reports..."):
                     <div class="source-pages">{pages_text}</div>
                 </div>
                 """, unsafe_allow_html=True)
+        
+        # Display recommended queries as buttons
+        if response.get('recommended_queries'):
+            st.markdown('<div class="sources-header">💡 You might also want to ask:</div>', unsafe_allow_html=True)
+            
+            # Get current message count for unique keys
+            msg_count = len(st.session_state.messages)
+            
+            # Display recommended queries as buttons
+            for idx, query in enumerate(response['recommended_queries']):
+                # Create unique key for each button
+                button_key = f"rec_current_{msg_count}_{idx}"
+                
+                if st.button(
+                    f"💬 {query}",
+                    key=button_key,
+                    use_container_width=True,
+                    type="secondary"
+                ):
+                    # Store the recommended query to be processed
+                    st.session_state.recommended_query = query
+                    st.session_state.trigger_recommended_query = True
+                    st.rerun()
 
     # Add assistant message to chat history
     st.session_state.messages.append({
         "role": "assistant",
         "content": response['response'],
         "sources": response['sources'],
+        "recommended_queries": response.get('recommended_queries', []),
         "timestamp": response['timestamp']
     })
     
