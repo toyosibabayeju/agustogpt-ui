@@ -51,7 +51,12 @@ load_css()
 
 # API Configuration
 AGENT_API_URL = os.getenv('AGENT_API_URL', 'http://localhost:8000')
-CLIENT_API_URL = os.getenv('CLIENT_API_URL', 'https://ami-be.ag-apps.agusto.com')
+
+# Client API URL - use test endpoint in dev mode, production endpoint otherwise
+if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+    CLIENT_API_URL = os.getenv('CLIENT_API_URL_DEV', 'https://ami-be.ag-test.agusto.com')
+else:
+    CLIENT_API_URL = os.getenv('CLIENT_API_URL', 'https://ami-be.ag-apps.agusto.com')
 
 # Functions
 def get_jwt_token():
@@ -120,9 +125,14 @@ def get_client_details() -> Dict[str, Any]:
         # Get JWT token from cookies
         jwt_token = get_jwt_token()
         
+        # Debug: Show which endpoint is being used
+        if os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
+            endpoint_type = "TEST" if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true' else "PRODUCTION"
+            st.sidebar.caption(f"🌐 Using {endpoint_type} client API: {CLIENT_API_URL}")
+        
         # Check if JWT token is available
         if not jwt_token:
-            st.warning("No JWT token found in cookies. Using default user.")
+            st.warning("No JWT token found. Using default user.")
             return {
                 "id": "default_user",
                 "company": "Default Company",

@@ -29,9 +29,12 @@ Frontend for the AgustoGPT AI Research Assistant that premium clients will inter
 
 2. Configure environment variables:
 ```bash
-cp .env.example .env
+cp env.example .env
 ```
-Edit `.env` to set `AGENT_API_URL=http://localhost:8000`
+Edit `.env` file:
+- Set `AGENT_API_URL=http://localhost:8000`
+- Set `ENABLE_DEV_MODE=true` to use test client API endpoint
+- Set `DEBUG_COOKIES=true` to see JWT token source
 
 ### Running the UI
 
@@ -177,30 +180,34 @@ Trigger manually via GitHub Actions tab → "Deploy to Azure Container Web App" 
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and configure:
+Copy `env.example` to `.env` and configure:
 
 ```bash
-cp .env.example .env
+cp env.example .env
 ```
+
+Edit the `.env` file with your actual values.
 
 ### Configuration Options
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `AGENT_API_URL` | URL of the agent API endpoint | `http://localhost:8000` | Yes |
-| `CLIENT_API_URL` | URL of the client API endpoint | `https://ami-be.ag-apps.agusto.com` | Yes |
+| `CLIENT_API_URL` | URL of the production client API endpoint | `https://ami-be.ag-apps.agusto.com` | Yes |
+| `CLIENT_API_URL_DEV` | URL of the test/dev client API endpoint | `https://ami-be.ag-test.agusto.com` | No |
 | `JWT_TOKEN` | JWT token for client API authentication (dev fallback) | - | No |
-| `ENABLE_DEV_MODE` | Enable development features (manual token input, debug tools) | `false` | No |
-| `DEBUG_COOKIES` | Show debug info about token sources | `false` | No |
+| `ENABLE_DEV_MODE` | Enable development features and use test API endpoint | `false` | No |
+| `DEBUG_COOKIES` | Show debug info about JWT token sources | `false` | No |
 | `DEBUG_QUERIES` | Show debug info about API payloads | `false` | No |
 | `DEFAULT_USER_ID` | Fallback user ID when client API fails | `default_user` | No |
 
-**JWT Token Priority** (checked in this order):
-1. **URL parameter** `?jwt_token=...` (for iframe embedding) - Highest priority
-2. **Manual input** via Development Mode UI
-3. **HTTP cookie** named `jwt_token`
-4. **Environment variable** `JWT_TOKEN` (local development)
-5. **Fallback** to "default_user" if none found
+**Client API Endpoint Selection:**
+- When `ENABLE_DEV_MODE=true`: Uses `CLIENT_API_URL_DEV` (test endpoint: `https://ami-be.ag-test.agusto.com`)
+- When `ENABLE_DEV_MODE=false` or not set: Uses `CLIENT_API_URL` (production endpoint: `https://ami-be.ag-apps.agusto.com`)
+
+For detailed information about environment-based endpoints, see `ENVIRONMENT_ENDPOINTS.md`.
+
+**Note**: The JWT token is primarily read from HTTP cookies (`jwt_token` cookie). The environment variable `JWT_TOKEN` is only used as a fallback for local development.
 
 ### API Payload Format
 
