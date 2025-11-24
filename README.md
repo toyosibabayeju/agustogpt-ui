@@ -92,17 +92,48 @@ The application maintains conversation context by including the most recent 2 ch
 The application integrates with the client API to retrieve user-specific information:
 
 - **Endpoint**: `GET https://ami-be.ag-apps.agusto.com/api/current-client`
-- **Authentication**: Bearer token (JWT) from HTTP cookies
-  - Cookie name: `jwt_token`
-  - Fallback: Environment variable `JWT_TOKEN` for local development
+- **Authentication**: Bearer token (JWT) from multiple sources (priority order):
+  1. **URL query parameter** `jwt_token` (for iframe embedding) ⭐ Recommended for iframes
+  2. **Manual input** via Development Mode UI
+  3. **HTTP cookie** named `jwt_token`
+  4. **Environment variable** `JWT_TOKEN` (for local development)
 - **Response**: User ID, company, country, and available industry reports
 - **Fallback**: If the API fails or JWT is not found, uses "default_user" as fallback
 
-#### Cookie Authentication
-The application reads the JWT token from browser cookies:
-1. Primary source: `jwt_token` cookie (set by your authentication system)
-2. Fallback source: `JWT_TOKEN` environment variable (for local development)
-3. If neither is available: Falls back to "default_user" with no reports
+#### iFrame Embedding (Recommended)
+
+For embedding AgustoGPT in an iframe, pass the JWT token via URL:
+
+```html
+<iframe 
+  src="https://your-streamlit-app.com/?jwt_token=YOUR_JWT_TOKEN_HERE"
+  width="100%" 
+  height="800px"
+  allow="clipboard-write">
+</iframe>
+```
+
+**JavaScript Example:**
+```javascript
+const iframe = document.getElementById('agustogpt-iframe');
+const jwtToken = getYourJWTToken(); // Your auth function
+iframe.src = `https://your-app.com/?jwt_token=${encodeURIComponent(jwtToken)}`;
+```
+
+For detailed iframe integration guide, see `config_jwt_token.md`.
+
+**Testing Locally:**
+- Open `test_iframe_integration.html` in your browser
+- Paste your JWT token
+- Click "Load with Token"
+- The iframe will embed AgustoGPT with authentication
+
+#### Other Authentication Methods
+
+The application also supports:
+- **Cookie**: `jwt_token` cookie (set by your authentication system)
+- **Manual Input**: Development Mode UI (enable with `ENABLE_DEV_MODE=true`)
+- **Environment Variable**: `JWT_TOKEN` in `.env` file (for local development)
 
 The industry reports from the client API are automatically included in the `industry_to_search` field of the agent API payload:
 - In **Auto Search Mode**: Always sends the comma-separated list of user's industry reports
@@ -159,11 +190,17 @@ cp .env.example .env
 | `AGENT_API_URL` | URL of the agent API endpoint | `http://localhost:8000` | Yes |
 | `CLIENT_API_URL` | URL of the client API endpoint | `https://ami-be.ag-apps.agusto.com` | Yes |
 | `JWT_TOKEN` | JWT token for client API authentication (dev fallback) | - | No |
+| `ENABLE_DEV_MODE` | Enable development features (manual token input, debug tools) | `false` | No |
+| `DEBUG_COOKIES` | Show debug info about token sources | `false` | No |
+| `DEBUG_QUERIES` | Show debug info about API payloads | `false` | No |
 | `DEFAULT_USER_ID` | Fallback user ID when client API fails | `default_user` | No |
-| `ENVIRONMENT` | Application environment | `development` | No |
-| `LOG_LEVEL` | Logging level | `INFO` | No |
 
-**Note**: The JWT token is primarily read from HTTP cookies (`jwt_token` cookie). The environment variable `JWT_TOKEN` is only used as a fallback for local development.
+**JWT Token Priority** (checked in this order):
+1. **URL parameter** `?jwt_token=...` (for iframe embedding) - Highest priority
+2. **Manual input** via Development Mode UI
+3. **HTTP cookie** named `jwt_token`
+4. **Environment variable** `JWT_TOKEN` (local development)
+5. **Fallback** to "default_user" if none found
 
 ### API Payload Format
 
