@@ -636,7 +636,7 @@ with st.sidebar:
     <div class="header-overlay-container">
         <div class="custom-header-alert" role="alert">
             <div class="header-user-text">
-                Welcome, {st.session_state.user_id}
+                Welcome, {st.session_state.get('user_company', 'Guest')}
             </div>
         </div>
     </div>
@@ -662,15 +662,15 @@ with st.sidebar:
 
     # st.markdown("---")
     
-    # User Info
-    user_display_id = st.session_state.user_id
-    # Truncate long user IDs for display
-    if len(user_display_id) > 20:
-        user_display_id = user_display_id[:17] + "..."
-        
-    # Show company if available
-    if st.session_state.get('user_company') and st.session_state.user_company != 'Default Company':
-        st.caption(f"🏢 {st.session_state.user_company}")
+    # User Info - Display company name instead of user ID
+    user_display_company = st.session_state.get('user_company', 'Guest')
+    # Truncate long company names for display
+    if len(user_display_company) > 20:
+        user_display_company = user_display_company[:17] + "..."
+    
+    # Show company name
+    if user_display_company and user_display_company != 'Default Company':
+        st.caption(f"🏢 {user_display_company}")
     
     # Show available reports count
     if st.session_state.get('user_reports'):

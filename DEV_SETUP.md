@@ -1,5 +1,14 @@
 # Development Setup Guide
 
+## Development vs Production Endpoints
+
+The application uses different client API endpoints based on the `ENABLE_DEV_MODE` setting:
+
+- **Development Mode** (`ENABLE_DEV_MODE=true`): Uses `https://ami-be.ag-test.agusto.com`
+- **Production Mode** (`ENABLE_DEV_MODE=false` or not set): Uses `https://ami-be.ag-apps.agusto.com`
+
+This allows you to test against a test/staging environment without affecting production data.
+
 ## JWT Token Authentication for Development
 
 Since the cookie manager may not work reliably when testing locally, we've added multiple ways to provide JWT tokens for development.
