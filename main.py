@@ -57,12 +57,32 @@ CLIENT_API_URL = os.getenv('CLIENT_API_URL', 'https://ami-be.ag-apps.agusto.com'
 def get_jwt_token():
     """
     Get JWT token from multiple sources (priority order):
-    1. Manual input (development mode)
-    2. HTTP cookies
-    3. Environment variables
+    1. URL query parameters (for iframe embedding)
+    2. Manual input (development mode)
+    3. HTTP cookies
+    4. Environment variables
     """
-    # First check for manual JWT token input (development mode)
+    # First check URL query parameters (for iframe embedding)
+    try:
+        # Get query parameters from URL
+        if hasattr(st, 'query_params'):
+            query_params = st.query_params
+            if 'jwt_token' in query_params:
+                jwt_from_url = query_params['jwt_token']
+                if jwt_from_url:
+                    # Debug: Show that JWT came from URL
+                    if os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
+                        st.sidebar.success("🔗 Using JWT from URL parameter (iframe)")
+                    return jwt_from_url
+    except Exception as e:
+        # If query param reading fails, log and continue to fallback
+        if os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
+            st.sidebar.error(f"Query param read error: {str(e)}")
+    
+    # Then check for manual JWT token input (development mode)
     if st.session_state.get('manual_jwt_token'):
+        if os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
+            st.sidebar.info("📝 Using manual JWT token")
         return st.session_state.manual_jwt_token
     
     # Try to get from cookies
@@ -75,6 +95,8 @@ def get_jwt_token():
             st.sidebar.caption(f"🔍 Available cookies: {list(cookies.keys()) if cookies else 'None'}")
         
         if jwt_from_cookie:
+            if os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
+                st.sidebar.info("🍪 Using JWT from cookie")
             return jwt_from_cookie
     except Exception as e:
         # If cookie reading fails, log and continue to fallback
@@ -84,7 +106,7 @@ def get_jwt_token():
     # Fallback to environment variable (for development)
     env_token = os.getenv('JWT_TOKEN', '')
     if env_token and os.getenv('DEBUG_COOKIES', 'false').lower() == 'true':
-        st.sidebar.info("Using JWT from environment variable")
+        st.sidebar.info("⚙️ Using JWT from environment variable")
     
     return env_token
 
