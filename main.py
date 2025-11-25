@@ -193,11 +193,19 @@ if 'user_id' not in st.session_state or 'client_data' not in st.session_state:
     st.session_state.user_company = client_data.get('company', 'Default Company')
     st.session_state.user_country = client_data.get('country', 'Nigeria')
     st.session_state.user_reports = client_data.get('industryReports', [])
+    
+    # For storage operations, use company name instead of user_id
+    # This groups chats by company rather than individual user IDs
+    if st.session_state.user_company and st.session_state.user_company != 'Default Company':
+        st.session_state.storage_user_id = st.session_state.user_company
+    else:
+        # For default/non-JWT sessions, keep using "default_user"
+        st.session_state.storage_user_id = 'default_user'
 
 if 'chat_history' not in st.session_state:
     # Load chat history from Azure if available
     if storage_manager.enabled:
-        st.session_state.chat_history = storage_manager.list_user_chats(st.session_state.user_id, limit=20)
+        st.session_state.chat_history = storage_manager.list_user_chats(st.session_state.storage_user_id, limit=20)
     else:
         # Fallback to dummy data if Azure is not configured
         st.session_state.chat_history = [
@@ -444,10 +452,10 @@ def save_current_chat():
         'filters': st.session_state.filters
     }
     
-    # Save to Azure
+    # Save to Azure (using company name as storage identifier)
     success = storage_manager.save_chat_session(
         chat_id=st.session_state.chat_id,
-        user_id=st.session_state.user_id,
+        user_id=st.session_state.storage_user_id,
         messages=st.session_state.messages,
         metadata=metadata
     )
@@ -455,7 +463,7 @@ def save_current_chat():
     if success:
         # Update chat history in session state
         st.session_state.chat_history = storage_manager.list_user_chats(
-            st.session_state.user_id, 
+            st.session_state.storage_user_id, 
             limit=20
         )
     
@@ -468,7 +476,7 @@ def load_chat_session(chat_id: str):
     
     chat_data = storage_manager.load_chat_session(
         chat_id=chat_id,
-        user_id=st.session_state.user_id
+        user_id=st.session_state.storage_user_id
     )
     
     if chat_data:
@@ -1019,10 +1027,10 @@ if prompt or (prompt := st.chat_input("Ask a question about your reports...")):
     
     # Save chat session to Azure Storage
     if storage_manager.enabled:
-        # Log the query/response interaction
+        # Log the query/response interaction (using company name as storage identifier)
         storage_manager.log_query(
             chat_id=st.session_state.chat_id,
-            user_id=st.session_state.user_id,
+            user_id=st.session_state.storage_user_id,
             query=prompt,
             response=response['response'],
             search_mode=st.session_state.search_mode,
