@@ -7,6 +7,7 @@ import streamlit as st
 from datetime import datetime
 import time
 import os
+import json
 import requests
 from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
@@ -132,7 +133,11 @@ def get_client_details() -> Dict[str, Any]:
         
         # Check if JWT token is available
         if not jwt_token:
-            st.warning("No JWT token found. Using default user.")
+            if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+                st.warning("⚠️ Not authenticated. Using guest access.\n\n**Dev Mode:** No JWT token found.")
+            else:
+                st.info("👤 Using guest access.")
+            
             return {
                 "id": "default_user",
                 "company": "Default Company",
@@ -158,8 +163,12 @@ def get_client_details() -> Dict[str, Any]:
         return client_data
         
     except requests.exceptions.RequestException as e:
-        # Handle API errors gracefully
-        st.warning(f"Failed to fetch client details: {str(e)}. Using default user.")
+        # Handle API errors gracefully with user-friendly message
+        if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+            st.warning(f"⚠️ Unable to verify credentials. Using guest access.\n\n**Dev Mode:** {str(e)}")
+        else:
+            st.warning("⚠️ Unable to verify credentials. Using guest access.")
+        
         return {
             "id": "default_user",
             "company": "Default Company",
@@ -167,7 +176,12 @@ def get_client_details() -> Dict[str, Any]:
             "industryReports": []
         }
     except Exception as e:
-        st.warning(f"Unexpected error fetching client details: {str(e)}. Using default user.")
+        # Handle unexpected errors
+        if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+            st.warning(f"⚠️ Authentication issue. Using guest access.\n\n**Dev Mode:** {type(e).__name__}: {str(e)}")
+        else:
+            st.warning("⚠️ Authentication issue. Using guest access.")
+        
         return {
             "id": "default_user",
             "company": "Default Company",
@@ -403,18 +417,29 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
         }
 
     except requests.exceptions.RequestException as e:
-        # Handle API errors gracefully
-        error_msg = f"Error connecting to agent API: {str(e)}\n\nPlease ensure the agent API is running at {AGENT_API_URL}"
+        # Handle API errors gracefully with user-friendly messages
         
-        # If it's a 422 error, provide more details
-        if hasattr(e, 'response') and e.response is not None:
-            if e.response.status_code == 422:
-                try:
-                    error_detail = e.response.json()
-                    error_msg += f"\n\n**Validation Error Details:**\n```json\n{error_detail}\n```"
-                    error_msg += f"\n\n**Payload Sent:**\n```json\n{payload}\n```"
-                except:
-                    error_msg += f"\n\nResponse: {e.response.text}"
+        # Generic user-friendly error message
+        error_msg = "⚠️ **Unable to reach our AI agent at the moment.**\n\n"
+        error_msg += "Please try again in a few moments. If the problem persists, contact support."
+        
+        # Add technical details only in development mode
+        if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+            error_msg += f"\n\n---\n**Technical Details (Dev Mode Only):**\n"
+            error_msg += f"- Error: {str(e)}\n"
+            error_msg += f"- API URL: {AGENT_API_URL}\n"
+            
+            # If it's a 422 error, provide more details
+            if hasattr(e, 'response') and e.response is not None:
+                error_msg += f"- Status Code: {e.response.status_code}\n"
+                
+                if e.response.status_code == 422:
+                    try:
+                        error_detail = e.response.json()
+                        error_msg += f"\n**Validation Error:**\n```json\n{json.dumps(error_detail, indent=2)}\n```"
+                        error_msg += f"\n**Payload Sent:**\n```json\n{json.dumps(payload, indent=2)}\n```"
+                    except:
+                        error_msg += f"\n**Response:** {e.response.text}"
         
         return {
             "response": error_msg,
@@ -423,8 +448,18 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
+        # Generic error message for unexpected errors
+        error_msg = "⚠️ **An unexpected error occurred.**\n\n"
+        error_msg += "Please try again. If the problem persists, contact support."
+        
+        # Add technical details only in development mode
+        if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+            error_msg += f"\n\n---\n**Technical Details (Dev Mode Only):**\n"
+            error_msg += f"- Error Type: {type(e).__name__}\n"
+            error_msg += f"- Error: {str(e)}"
+        
         return {
-            "response": f"Unexpected error: {str(e)}",
+            "response": error_msg,
             "sources": [],
             "recommended_queries": [],
             "timestamp": datetime.now().isoformat()
