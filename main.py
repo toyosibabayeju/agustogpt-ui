@@ -585,6 +585,12 @@ with st.sidebar:
     # User Info - Injected into Header via CSS
     chat_display_id = st.session_state.chat_id[:12] if st.session_state.chat_id else 'None'
     
+    # User Info - Display company name instead of user ID
+    user_display_company = st.session_state.get('user_company', 'Guest')
+    # Truncate long company names for display
+    if len(user_display_company) > 20:
+        user_display_company = user_display_company[:17] + "..."
+    
     header_css_hack = f"""
     <style>
         /* Target the Sidebar Content to allow overflow for our hoisted element */
@@ -636,7 +642,7 @@ with st.sidebar:
     <div class="header-overlay-container">
         <div class="custom-header-alert" role="alert">
             <div class="header-user-text">
-                Welcome, {st.session_state.get('user_company', 'Guest')}
+                Welcome, {user_display_company}
             </div>
         </div>
     </div>
@@ -662,11 +668,6 @@ with st.sidebar:
 
     # st.markdown("---")
     
-    # User Info - Display company name instead of user ID
-    user_display_company = st.session_state.get('user_company', 'Guest')
-    # Truncate long company names for display
-    if len(user_display_company) > 20:
-        user_display_company = user_display_company[:17] + "..."
     
     # Show company name
     if user_display_company and user_display_company != 'Default Company':
