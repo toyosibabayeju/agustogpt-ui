@@ -597,74 +597,21 @@ def display_message(message, message_index=None):
 
 # ===== SIDEBAR =====
 with st.sidebar:
-    # User Info - Injected into Header via CSS
-    chat_display_id = st.session_state.chat_id[:12] if st.session_state.chat_id else 'None'
-    
-    # User Info - Display company name instead of user ID
+    # Welcome User at Top of Sidebar
     user_display_company = st.session_state.get('user_company', 'Guest')
     # Truncate long company names for display
     if len(user_display_company) > 20:
         user_display_company = user_display_company[:17] + "..."
     
-    header_css_hack = f"""
-    <style>
-        /* Target the Sidebar Content to allow overflow for our hoisted element */
-        div[data-testid="stSidebarContent"] {{
-            position: relative;
-            overflow-x: visible !important;
-            overflow-y: auto !important;
-        }}
-
-        /* Create the container that floats up into the header */
-        .header-overlay-container {{
-            position: absolute;
-            top: -3.75rem; /* Moves it up into the stSidebarHeader area */
-            left: 0;
-            width: 100%;
-            padding: 0 1rem;
-            z-index: 10000;
-            pointer-events: none;
-        }}
-
-        /* Style the user info box */
-        .custom-header-alert {{
-            background-color: transparent;
-            border: none;
-            color: var(--agusto-navy);
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            line-height: 1.4;
-            pointer-events: auto;
-            transition: all 0.3s ease;
-        }}
-
-        .header-user-text {{
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.25rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-align: center;
-        }}
-
-        .custom-header-alert:hover .header-user-text {{
-            color: var(--agusto-blue);
-        }}
-    </style>
-
-    <div class="header-overlay-container">
-        <div class="custom-header-alert" role="alert">
-            <div class="header-user-text">
-                Welcome, {user_display_company}
-            </div>
-        </div>
+    # Display welcome message at top of sidebar
+    st.markdown(f"""
+    <div style="text-align: center; padding: 1rem 0.5rem; margin-bottom: 1rem; 
+                background: linear-gradient(135deg, #001B44 0%, #003366 100%); 
+                border-radius: 10px; color: white;">
+        <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Welcome</div>
+        <div style="font-size: 1.1rem; font-weight: 700;">{user_display_company}</div>
     </div>
-    """
-    
-    # Inject the HTML/CSS
-    st.markdown(header_css_hack, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     
     # # Logo and Title (commented out)
     # st.markdown("""
@@ -682,11 +629,6 @@ with st.sidebar:
     # """, unsafe_allow_html=True)
 
     # st.markdown("---")
-    
-    
-    # Show company name
-    if user_display_company and user_display_company != 'Default Company':
-        st.caption(f"🏢 {user_display_company}")
     
     # Show available reports count
     if st.session_state.get('user_reports'):
