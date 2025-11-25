@@ -297,14 +297,26 @@ The AI agent can suggest follow-up questions to help users explore topics more d
    - "How does this affect insurance sector?"
 4. User clicks a button → Query is automatically sent with full context
 
+## Azure Chat Storage (Optional)
+
+The app supports persistent chat storage using Azure Blob Storage and Table Storage:
+
+- **Requirements**: Azure Storage account with connection string
+- **Configuration**: Set `AZURE_STORAGE_CONNECTION_STRING` in `.env`
+- **Without Azure**: App works with session-only storage (chats lost on browser close)
+
+**Troubleshooting:** If chat history storage is not working, see `AZURE_STORAGE_TROUBLESHOOTING.md` for detailed diagnostics and solutions.
+
 ## Project Structure
 
 ```
 .
 ├── main.py              # Main Streamlit application
+├── azure_storage.py     # Azure Storage integration
 ├── requirements.txt     # Python dependencies
 ├── Dockerfile          # Container configuration
 ├── .dockerignore       # Docker build exclusions
+├── AZURE_STORAGE_TROUBLESHOOTING.md  # Storage troubleshooting guide
 ├── styles/
 │   └── main.css        # Custom styling
 ├── assets/

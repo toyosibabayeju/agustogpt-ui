@@ -202,6 +202,13 @@ if 'user_id' not in st.session_state or 'client_data' not in st.session_state:
         # For default/non-JWT sessions, keep using "default_user"
         st.session_state.storage_user_id = 'default_user'
 
+# Ensure storage_user_id is always set (safeguard for session state edge cases)
+if 'storage_user_id' not in st.session_state:
+    if st.session_state.get('user_company') and st.session_state.user_company != 'Default Company':
+        st.session_state.storage_user_id = st.session_state.user_company
+    else:
+        st.session_state.storage_user_id = 'default_user'
+
 if 'chat_history' not in st.session_state:
     # Load chat history from Azure if available
     if storage_manager.enabled:
@@ -743,13 +750,14 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Storage Status
-    if st.session_state.storage_enabled:
-        st.success("☁️")
-    else:
-        st.warning("💾")
+    # Storage Status (only show in dev mode)
+    if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+        if st.session_state.storage_enabled:
+            st.success("☁️ Storage: Enabled")
+        else:
+            st.warning("💾 Storage: Session Only")
     
-    if st.session_state.chat_id:
+    if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true' and st.session_state.chat_id:
         st.caption(f"💬 Chat ID: {st.session_state.chat_id[:12]}...")
     
     st.markdown("---")
