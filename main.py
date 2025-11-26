@@ -50,6 +50,47 @@ def load_css():
 
 load_css()
 
+# Remove default Streamlit padding/margins at top
+st.markdown("""
+<style>
+    /* Remove top padding from main content */
+    .stMainBlockContainer {
+        padding-top: 0 !important;
+    }
+    
+    /* Remove top padding from sidebar */
+    section[data-testid="stSidebar"] > div:first-child {
+        padding-top: 0 !important;
+    }
+    
+    /* Remove sidebar content padding */
+    [data-testid="stSidebarContent"] {
+        padding-top: 0.0rem !important;
+    }
+    
+    /* Remove default block spacing */
+    .block-container {
+        padding-top: 0 !important;
+    }
+    
+    /* Hide header completely */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    /* Remove app view container top padding */
+    .stAppViewContainer {
+        padding-top: 0 !important;
+    }
+    
+    /* Remove main container top margin */
+    .main .block-container {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # API Configuration
 AGENT_API_URL = os.getenv('AGENT_API_URL', 'http://localhost:8000')
 
@@ -291,9 +332,9 @@ DUMMY_SOURCES = [
     }
 ]
 
-# Filter Options - Aligned with Azure Search Index
-INDUSTRY_SECTORS = ['', 'Oil & Gas Upstream', 'Oil & Gas Downstream', 'Insurance', 'Banking', 'Electricity', 'Telecommunications']
-REPORT_YEARS = ['', '2025', '2024', '2023', '2022', '2021']
+# Filter Options
+INDUSTRY_SECTORS = ['', 'Oil & Gas Upstream', 'Oil & Gas Downstream', 'Insurance', 'Banking', 'Electricity', 'Telecommunications', 'HMO']
+REPORT_YEARS = ['', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018']
 
 # Functions
 
@@ -329,7 +370,7 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
     """
     Call the agent API to get response
     Supports both auto and tailored search modes
-    Includes recent chat history for context
+    Includes recent chat history and available industry reports for context
     """
     try:
         # Get client details and industry reports
@@ -344,14 +385,23 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
         if st.session_state.get('enable_chat_history', True):
             chat_history = get_recent_chat_history(num_messages=2)
         
-        # Append chat history to the query if it exists
+        # Build enhanced query with chat history and industry reports
         # NOTE: This enhanced query is ONLY sent to the API, never displayed in UI
         # The user sees only their original query in the chat interface
-        enhanced_query = chat_history + 'the current user query is: ' + query + ' ' if chat_history else query
+        enhanced_query = query
+        
+        # Append chat history if available
+        if chat_history:
+            enhanced_query = chat_history + 'the current user query is: ' + query + ' '
+        
+        # Append available industry reports to the query
+        if industry_reports_str:
+            enhanced_query = enhanced_query + ' The available industry reports are: ' + industry_reports_str + '.'
         
         # Debug: Show what's being sent (if debug mode is enabled)
-        if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true' and chat_history:
-            st.sidebar.info(f"📝 Query with history: {enhanced_query[:150]}...")
+        if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
+            if chat_history or industry_reports_str:
+                st.sidebar.info(f"📝 Enhanced query: {enhanced_query[:200]}...")
         
         # Prepare base payload
         payload = {
