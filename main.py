@@ -761,9 +761,7 @@ with st.sidebar:
     if st.button("New Chat", icon=":material/edit_square:", use_container_width=True, type="primary"):
         start_new_chat()
         st.rerun()
-    
-    st.markdown("---")
-    
+        
     # Storage Status (only show in dev mode)
     if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
         if st.session_state.storage_enabled:
@@ -773,9 +771,7 @@ with st.sidebar:
     
     if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true' and st.session_state.chat_id:
         st.caption(f"💬 Chat ID: {st.session_state.chat_id[:12]}...")
-    
-    st.markdown("---")
-        
+            
     # Filters (only show in tailored mode)
     if st.session_state.search_mode == 'tailored':
         with st.expander("Report Filters", expanded=True):
