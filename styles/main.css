@@ -42,6 +42,23 @@ header {visibility: hidden;}
     max-width: 300px !important;
 }
 
+/* Sidebar Welcome Header */
+.sidebar-welcome-header {
+    background: linear-gradient(135deg, var(--agusto-navy) 0%, #003875 100%);
+    color: white;
+    padding: 1rem 1.25rem;
+    margin: -1rem -1rem 1rem -1rem;
+    border-radius: 0;
+}
+
+.sidebar-welcome-header div:first-child {
+    opacity: 0.9;
+}
+
+.sidebar-welcome-header div:last-child {
+    color: white !important;
+}
+
 /* Hide the sidebar collapse button completely */
 [data-testid="stSidebarCollapseButton"],
 [data-testid="stSidebarCollapseButton"] button {

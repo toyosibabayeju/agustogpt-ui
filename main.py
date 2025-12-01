@@ -57,36 +57,42 @@ st.markdown("""
     .stMainBlockContainer {
         padding-top: 0 !important;
     }
-    
+
     /* Remove top padding from sidebar */
     section[data-testid="stSidebar"] > div:first-child {
         padding-top: 0 !important;
     }
-    
+
     /* Remove sidebar content padding */
     [data-testid="stSidebarContent"] {
         padding-top: 0.0rem !important;
     }
-    
+
     /* Remove default block spacing */
     .block-container {
         padding-top: 0 !important;
     }
-    
+
     /* Hide header completely */
     header[data-testid="stHeader"] {
         display: none !important;
     }
-    
+
     /* Remove app view container top padding */
     .stAppViewContainer {
         padding-top: 0 !important;
     }
-    
+
     /* Remove main container top margin */
     .main .block-container {
         padding-top: 0 !important;
         margin-top: 0 !important;
+    }
+
+    /* Reduce sidebar header height and margin */
+    [data-testid="stSidebarHeader"] {
+        height: 2rem !important;
+        margin-bottom: 0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -682,38 +688,19 @@ def display_message(message, message_index=None):
 
 # ===== SIDEBAR =====
 with st.sidebar:
-    # Welcome User at Top of Sidebar
+    # Welcome User at Top of Sidebar (in stSidebarHeader)
     user_display_company = st.session_state.get('user_company', 'Guest')
     # Truncate long company names for display
     if len(user_display_company) > 20:
         user_display_company = user_display_company[:17] + "..."
     
-    # Display welcome message at top of sidebar
+    # Display welcome message in sidebar header
     st.markdown(f"""
-    <div style="text-align: center; padding: 1rem 0.5rem; margin-bottom: 1rem; 
-                background: linear-gradient(135deg, #001B44 0%, #003366 100%); 
-                border-radius: 10px; color: white;">
-        <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Welcome</div>
-        <div style="font-size: 1.1rem; font-weight: 700;">{user_display_company}</div>
+    <div class="sidebar-welcome-header">
+        <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem; text-align: center;">Welcome</div>
+        <div style="font-size: 1.1rem; font-weight: 700; text-align: center;">{user_display_company}</div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # # Logo and Title (commented out)
-    # st.markdown("""
-    # <div class="sidebar-header">
-    #     <div class="logo-container">
-    #         <div class="logo-icon">
-    #             <div class="logo-square gray"></div>
-    #             <div class="logo-square navy"></div>
-    #             <div class="logo-square navy"></div>
-    #             <div class="logo-square gray"></div>
-    #         </div>
-    #         <span class="logo-text">AgustoGPT</span>
-    #     </div>
-    # </div>
-    # """, unsafe_allow_html=True)
-
-    # st.markdown("---")
     
     # Show available reports count
     if st.session_state.get('user_reports'):
