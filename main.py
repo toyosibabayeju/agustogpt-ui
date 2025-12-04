@@ -404,12 +404,12 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
         
         if search_mode == 'tailored':
             if filters and filters.get('selected_documents'):
-                selected_docs_str = ", ".join(filters['selected_documents'])
-                enhanced_query = enhanced_query + ' documents available are ' + selected_docs_str + '.' + 'If document is not found in search or relavent information is not found, inform the user that the info is not available in the documents <documant name>'
+                selected_docs_str = ", ".join([f"{doc}.pdf" for doc in filters['selected_documents']])
+                enhanced_query = enhanced_query + ' documents available are ' + selected_docs_str + '.' + 'If document is not found in search or relavent information is not found, inform the user that the info is not available in the documents <documant name>. Make sure to use the full name along with extension .pdf for calling the document.'
                 industry_context = selected_docs_str
         elif industry_reports_str:
             # Auto mode
-            enhanced_query = enhanced_query + ' The available industry reports are: ' + industry_reports_str + '.' + 'If document is not found in search or relavent information is not found, inform the user that the info is not available in the documents <documant name>'
+            enhanced_query = enhanced_query + ' The available industry reports are: ' + industry_reports_str + '.' + 'If document is not found in search or relavent information is not found, inform the user that the info is not available in the documents <documant name>. Make sure to use the full name along with extension .pdf for calling the document.'
 
         # Debug: Show what's being sent (if debug mode is enabled)
         if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
