@@ -285,8 +285,7 @@ if 'chat_history' not in st.session_state:
 
 if 'filters' not in st.session_state:
     st.session_state.filters = {
-        'industry_sector': '',
-        'report_year': ''
+        'selected_documents': []
     }
 
 if 'storage_enabled' not in st.session_state:
@@ -400,40 +399,28 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
         if chat_history:
             enhanced_query = chat_history + 'the current user query is: ' + query + ' '
         
-        # Append available industry reports to the query
-        if industry_reports_str:
-            enhanced_query = enhanced_query + ' The available industry reports are: ' + industry_reports_str + '.'
+        # Determine context and query modification
+        industry_context = industry_reports_str
         
+        if search_mode == 'tailored':
+            if filters and filters.get('selected_documents'):
+                selected_docs_str = ", ".join(filters['selected_documents'])
+                enhanced_query = enhanced_query + ' documents available are ' + selected_docs_str + '.'
+                industry_context = selected_docs_str
+        elif industry_reports_str:
+            # Auto mode
+            enhanced_query = enhanced_query + ' The available industry reports are: ' + industry_reports_str + '.'
+
         # Debug: Show what's being sent (if debug mode is enabled)
         if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
-            if chat_history or industry_reports_str:
-                st.sidebar.info(f"📝 Enhanced query: {enhanced_query[:200]}...")
+            st.sidebar.info(f"📝 Enhanced query: {enhanced_query[:200]}...")
         
-        # Prepare base payload
+        # Prepare payload
         payload = {
-            "user_query": enhanced_query
+            "user_query": enhanced_query,
+            "year_to_search": datetime.now().year,
+            "industry_to_search": industry_context
         }
-
-        # Add filters for tailored search
-        if search_mode == 'tailored' and filters:
-            # Add year filter if specified, otherwise use current year
-            if filters.get('report_year'):
-                payload['year_to_search'] = int(filters['report_year'])
-            else:
-                payload['year_to_search'] = datetime.now().year
-
-            # Add industry filter if specified
-            # Use selected industry sector in tailored mode if available
-            if filters.get('industry_sector'):
-                payload['industry_to_search'] = filters['industry_sector']
-            else:
-                # If no specific industry selected in tailored mode, use industry reports string
-                payload['industry_to_search'] = industry_reports_str
-        else:
-            # Auto search - use current year and industry reports string
-            payload['year_to_search'] = datetime.now().year
-            # In auto mode, always use the industry reports string for context
-            payload['industry_to_search'] = industry_reports_str
 
         # Debug: Log payload before sending (if debug mode enabled)
         if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
@@ -598,8 +585,7 @@ def start_new_chat():
     # Keep the current search mode, don't reset to 'auto'
     # st.session_state.search_mode = 'auto'
     st.session_state.filters = {
-        'industry_sector': '',
-        'report_year': ''
+        'selected_documents': []
     }
 
 def display_message(message, message_index=None):
@@ -774,30 +760,19 @@ with st.sidebar:
             
     # Filters (only show in tailored mode)
     if st.session_state.search_mode == 'tailored':
-        with st.expander("Report Filters", expanded=True):
-            st.session_state.filters['industry_sector'] = st.selectbox(
-                "Industry Sector:",
-                INDUSTRY_SECTORS
+        with st.expander("Report Selection", expanded=True):
+            st.session_state.filters['selected_documents'] = st.multiselect(
+                "Select Documents:",
+                options=st.session_state.user_reports,
+                default=st.session_state.filters.get('selected_documents', [])
             )
 
-            st.session_state.filters['report_year'] = st.selectbox(
-                "Report Year:",
-                REPORT_YEARS
-            )
-
-            # Show selected filters
-            st.markdown("**Active Filters**")
-            active_filters = []
-            if st.session_state.filters.get('industry_sector'):
-                active_filters.append(st.session_state.filters['industry_sector'])
-            if st.session_state.filters.get('report_year'):
-                active_filters.append(st.session_state.filters['report_year'])
-
-            if active_filters:
-                for filter_val in active_filters:
-                    st.markdown(f'<div class="selected-report">{filter_val}</div>', unsafe_allow_html=True)
+            # Show selected filters count
+            if st.session_state.filters['selected_documents']:
+                count = len(st.session_state.filters['selected_documents'])
+                st.caption(f"{count} document{'s' if count != 1 else ''} selected")
             else:
-                st.markdown('<div class="selected-report-more">No filters selected</div>', unsafe_allow_html=True)
+                st.caption("No documents selected")
     
     # Chat History
     with st.expander("Chat History", expanded=True):
