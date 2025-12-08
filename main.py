@@ -91,7 +91,7 @@ st.markdown("""
 
     /* Reduce sidebar header height and margin */
     [data-testid="stSidebarHeader"] {
-        height: 2rem !important;
+        height: 0rem !important;
         margin-bottom: 0 !important;
     }
 </style>
