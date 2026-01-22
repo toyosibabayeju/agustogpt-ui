@@ -459,13 +459,31 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
         if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
             st.sidebar.json(payload)
         
-        # Make API request
-        response = requests.post(
-            f"{AGENT_API_URL}/query",
-            json=payload,
-            timeout=60
-        )
-        response.raise_for_status()
+        # Make API request with increased timeout and retry logic
+        # AI agent queries can take longer for complex questions
+        max_retries = 2
+        timeout_seconds = 180  # 3 minutes timeout for complex queries
+        
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    f"{AGENT_API_URL}/query",
+                    json=payload,
+                    timeout=timeout_seconds
+                )
+                response.raise_for_status()
+                break  # Success, exit retry loop
+            except requests.exceptions.Timeout:
+                if attempt < max_retries - 1:
+                    # Log retry attempt in debug mode
+                    if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
+                        st.warning(f"Request timed out, retrying... (attempt {attempt + 2}/{max_retries})")
+                    continue  # Retry
+                else:
+                    # All retries exhausted
+                    raise requests.exceptions.Timeout(
+                        f"Request timed out after {max_retries} attempts ({timeout_seconds}s each)"
+                    )
 
         # Parse response
         data = response.json()
@@ -492,8 +510,28 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
             "timestamp": data.get('current_date', datetime.now().isoformat())
         }
 
+    except requests.exceptions.Timeout as e:
+        # Handle timeout errors specifically
+        error_msg = "⏱️ **Your query is taking longer than expected.**\n\n"
+        error_msg += "This can happen with complex questions. Please try:\n"
+        error_msg += "- Simplifying your question\n"
+        error_msg += "- Breaking it into smaller parts\n"
+        error_msg += "- Trying again in a moment\n"
+        
+        if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+            error_msg += f"\n\n---\n**Technical Details (Dev Mode Only):**\n"
+            error_msg += f"- Error: {str(e)}\n"
+            error_msg += f"- API URL: {AGENT_API_URL}"
+        
+        return {
+            "response": error_msg,
+            "sources": [],
+            "recommended_queries": [],
+            "timestamp": datetime.now().isoformat()
+        }
+    
     except requests.exceptions.RequestException as e:
-        # Handle API errors gracefully with user-friendly messages
+        # Handle other API errors gracefully with user-friendly messages
         
         # Generic user-friendly error message
         error_msg = "⚠️ **Unable to reach our AI agent at the moment.**\n\n"
