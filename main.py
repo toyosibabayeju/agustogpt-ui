@@ -97,38 +97,38 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Splash Screen / Loader
-if 'splash_shown' not in st.session_state:
-    splash = st.empty()
-    with splash.container():
-        st.markdown("<div style='height: 30vh;'></div>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col2:
-            logo_path = "assets/agusto_logo.png"
-            if os.path.exists(logo_path):
-                st.image(logo_path, use_container_width=True)
-            else:
-                st.header("AgustoGPT")
-            
-            # # Powered by Vizyx branding - commented out
-            # st.markdown("""
-            #     <div style='text-align: center; font-size: 1.0rem; color: #666; margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 500;'>
-            #         Powered By
-            #     </div>
-            # """, unsafe_allow_html=True)
-
-            # vizyx_logo_path = "assets/vizyx-brand.png"
-            # if os.path.exists(vizyx_logo_path):
-            #     # Use nested columns to center and control size of Vizyx logo
-            #     v_col1, v_col2, v_col3 = st.columns([1, 2, 1])
-            #     with v_col2:
-            #         st.image(vizyx_logo_path, use_container_width=True)
-            # else:
-            #     st.markdown("<div style='text-align: center; font-weight: bold;'>Vizyx.Ltd</div>", unsafe_allow_html=True)
-            
-    time.sleep(3)
-    splash.empty()
-    st.session_state.splash_shown = True
+# Splash Screen / Loader - COMMENTED OUT
+# if 'splash_shown' not in st.session_state:
+#     splash = st.empty()
+#     with splash.container():
+#         st.markdown("<div style='height: 30vh;'></div>", unsafe_allow_html=True)
+#         col1, col2, col3 = st.columns([1, 1, 1])
+#         with col2:
+#             logo_path = "assets/agusto_logo.png"
+#             if os.path.exists(logo_path):
+#                 st.image(logo_path, use_container_width=True)
+#             else:
+#                 st.header("AgustoGPT")
+#             
+#             # # Powered by Vizyx branding - commented out
+#             # st.markdown("""
+#             #     <div style='text-align: center; font-size: 1.0rem; color: #666; margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 500;'>
+#             #         Powered By
+#             #     </div>
+#             # """, unsafe_allow_html=True)
+#
+#             # vizyx_logo_path = "assets/vizyx-brand.png"
+#             # if os.path.exists(vizyx_logo_path):
+#             #     # Use nested columns to center and control size of Vizyx logo
+#             #     v_col1, v_col2, v_col3 = st.columns([1, 2, 1])
+#             #     with v_col2:
+#             #         st.image(vizyx_logo_path, use_container_width=True)
+#             # else:
+#             #     st.markdown("<div style='text-align: center; font-weight: bold;'>Vizyx.Ltd</div>", unsafe_allow_html=True)
+#             
+#     time.sleep(3)
+#     splash.empty()
+#     st.session_state.splash_shown = True
 
 # API Configuration
 AGENT_API_URL = os.getenv('AGENT_API_URL', 'http://localhost:8000')
