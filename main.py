@@ -94,6 +94,7 @@ st.markdown("""
         height: 0rem !important;
         margin-bottom: 0 !important;
     }
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -659,6 +660,29 @@ def start_new_chat():
         'selected_documents': []
     }
 
+def delete_chat(chat_id: str) -> bool:
+    """Delete a chat session from Azure Storage"""
+    if not storage_manager.enabled:
+        return False
+    
+    success = storage_manager.delete_chat_session(
+        chat_id=chat_id,
+        user_id=st.session_state.storage_user_id
+    )
+    
+    if success:
+        # Update chat history in session state
+        st.session_state.chat_history = storage_manager.list_user_chats(
+            st.session_state.storage_user_id, 
+            limit=20
+        )
+        
+        # If we deleted the current chat, start a new one
+        if st.session_state.chat_id == chat_id:
+            start_new_chat()
+    
+    return success
+
 def display_message(message, message_index=None):
     """Display a single message (user or assistant)"""
     role = message.get('role', message.get('type', 'user'))  # Support both 'role' and 'type' keys
@@ -853,20 +877,33 @@ with st.sidebar:
                 chat_title = chat.get('title', 'Untitled Chat')
                 
                 # Truncate long titles
-                if len(chat_title) > 50:
-                    chat_title = chat_title[:47] + "..."
+                if len(chat_title) > 45:
+                    chat_title = chat_title[:42] + "..."
                 
-                # Create button with just the title
-                if st.button(chat_title, key=f"chat_{chat_id}", use_container_width=True):
-                    if storage_manager.enabled:
-                        with st.spinner("Loading chat..."):
-                            if load_chat_session(chat_id):
-                                st.success(f"Loaded: {chat_title}")
+                # Create columns for chat title button and delete button
+                col_chat, col_delete = st.columns([0.85, 0.15])
+                
+                with col_chat:
+                    # Create button with just the title
+                    if st.button(chat_title, key=f"chat_{chat_id}", use_container_width=True):
+                        if storage_manager.enabled:
+                            with st.spinner("Loading chat..."):
+                                if load_chat_session(chat_id):
+                                    st.success(f"Loaded: {chat_title}")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to load chat")
+                        else:
+                            st.info(f"Would load: {chat_title}")
+                
+                with col_delete:
+                    if st.button("🗑", key=f"delete_{chat_id}", help="Delete chat", type="tertiary"):
+                        if storage_manager.enabled:
+                            if delete_chat(chat_id):
+                                st.toast("Chat deleted", icon="✅")
                                 st.rerun()
                             else:
-                                st.error("Failed to load chat")
-                    else:
-                        st.info(f"Would load: {chat_title}")
+                                st.toast("Failed to delete chat", icon="⚠️")
         else:
             st.info("No chat history available")
     
