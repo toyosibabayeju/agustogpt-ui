@@ -94,6 +94,7 @@ st.markdown("""
         height: 0rem !important;
         margin-bottom: 0 !important;
     }
+    
 </style>
 """, unsafe_allow_html=True)
 
@@ -459,13 +460,31 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
         if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
             st.sidebar.json(payload)
         
-        # Make API request
-        response = requests.post(
-            f"{AGENT_API_URL}/query",
-            json=payload,
-            timeout=60
-        )
-        response.raise_for_status()
+        # Make API request with increased timeout and retry logic
+        # AI agent queries can take longer for complex questions
+        max_retries = 2
+        timeout_seconds = 180  # 3 minutes timeout for complex queries
+        
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    f"{AGENT_API_URL}/query",
+                    json=payload,
+                    timeout=timeout_seconds
+                )
+                response.raise_for_status()
+                break  # Success, exit retry loop
+            except requests.exceptions.Timeout:
+                if attempt < max_retries - 1:
+                    # Log retry attempt in debug mode
+                    if os.getenv('DEBUG_QUERIES', 'false').lower() == 'true':
+                        st.warning(f"Request timed out, retrying... (attempt {attempt + 2}/{max_retries})")
+                    continue  # Retry
+                else:
+                    # All retries exhausted
+                    raise requests.exceptions.Timeout(
+                        f"Request timed out after {max_retries} attempts ({timeout_seconds}s each)"
+                    )
 
         # Parse response
         data = response.json()
@@ -492,8 +511,28 @@ def call_agent_api(query: str, search_mode: str, filters: Optional[Dict[str, str
             "timestamp": data.get('current_date', datetime.now().isoformat())
         }
 
+    except requests.exceptions.Timeout as e:
+        # Handle timeout errors specifically
+        error_msg = "⏱️ **Your query is taking longer than expected.**\n\n"
+        error_msg += "This can happen with complex questions. Please try:\n"
+        error_msg += "- Simplifying your question\n"
+        error_msg += "- Breaking it into smaller parts\n"
+        error_msg += "- Trying again in a moment\n"
+        
+        if os.getenv('ENABLE_DEV_MODE', 'false').lower() == 'true':
+            error_msg += f"\n\n---\n**Technical Details (Dev Mode Only):**\n"
+            error_msg += f"- Error: {str(e)}\n"
+            error_msg += f"- API URL: {AGENT_API_URL}"
+        
+        return {
+            "response": error_msg,
+            "sources": [],
+            "recommended_queries": [],
+            "timestamp": datetime.now().isoformat()
+        }
+    
     except requests.exceptions.RequestException as e:
-        # Handle API errors gracefully with user-friendly messages
+        # Handle other API errors gracefully with user-friendly messages
         
         # Generic user-friendly error message
         error_msg = "⚠️ **Unable to reach our AI agent at the moment.**\n\n"
@@ -620,6 +659,29 @@ def start_new_chat():
     st.session_state.filters = {
         'selected_documents': []
     }
+
+def delete_chat(chat_id: str) -> bool:
+    """Delete a chat session from Azure Storage"""
+    if not storage_manager.enabled:
+        return False
+    
+    success = storage_manager.delete_chat_session(
+        chat_id=chat_id,
+        user_id=st.session_state.storage_user_id
+    )
+    
+    if success:
+        # Update chat history in session state
+        st.session_state.chat_history = storage_manager.list_user_chats(
+            st.session_state.storage_user_id, 
+            limit=20
+        )
+        
+        # If we deleted the current chat, start a new one
+        if st.session_state.chat_id == chat_id:
+            start_new_chat()
+    
+    return success
 
 def display_message(message, message_index=None):
     """Display a single message (user or assistant)"""
@@ -815,20 +877,33 @@ with st.sidebar:
                 chat_title = chat.get('title', 'Untitled Chat')
                 
                 # Truncate long titles
-                if len(chat_title) > 50:
-                    chat_title = chat_title[:47] + "..."
+                if len(chat_title) > 45:
+                    chat_title = chat_title[:42] + "..."
                 
-                # Create button with just the title
-                if st.button(chat_title, key=f"chat_{chat_id}", use_container_width=True):
-                    if storage_manager.enabled:
-                        with st.spinner("Loading chat..."):
-                            if load_chat_session(chat_id):
-                                st.success(f"Loaded: {chat_title}")
+                # Create columns for chat title button and delete button
+                col_chat, col_delete = st.columns([0.85, 0.15])
+                
+                with col_chat:
+                    # Create button with just the title
+                    if st.button(chat_title, key=f"chat_{chat_id}", use_container_width=True):
+                        if storage_manager.enabled:
+                            with st.spinner("Loading chat..."):
+                                if load_chat_session(chat_id):
+                                    st.success(f"Loaded: {chat_title}")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to load chat")
+                        else:
+                            st.info(f"Would load: {chat_title}")
+                
+                with col_delete:
+                    if st.button("🗑", key=f"delete_{chat_id}", help="Delete chat", type="tertiary"):
+                        if storage_manager.enabled:
+                            if delete_chat(chat_id):
+                                st.toast("Chat deleted", icon="✅")
                                 st.rerun()
                             else:
-                                st.error("Failed to load chat")
-                    else:
-                        st.info(f"Would load: {chat_title}")
+                                st.toast("Failed to delete chat", icon="⚠️")
         else:
             st.info("No chat history available")
     
